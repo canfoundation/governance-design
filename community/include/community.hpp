@@ -1,0 +1,385 @@
+#include <eosio/eosio.hpp>
+#include <eosio/multi_index.hpp>
+#include <eosio/print.hpp>
+#include <eosio/asset.hpp>
+#include <eosio/symbol.hpp>
+#include <eosio/singleton.hpp>
+#include <eosio/crypto.hpp>
+#include <math.h>
+// #include "exchange_state.hpp"
+
+using namespace eosio;
+using namespace std;
+CONTRACT community : public contract
+{
+
+    enum CodeRightHolder
+    {
+        CODE = 0,
+        AMENDMENT,
+    };
+
+    enum ExecutionType
+    {
+        SOLE_DECISION = 0,
+        COLLECTIVE_DECISION,
+        BOTH
+    };
+
+    enum ApprovalType{
+        SOLE_APPROVAL = 0,
+        APPROVAL_CONSENSUS,
+        BOTH_TYPE
+    };
+
+    enum ProposalStatus
+    {
+        IN_PROGRESS = 0,
+        PROPOSAL_APPROVE,
+        EXECUTED,
+        EXPIRED
+    };
+
+    enum FillingType {
+        APPOINTMENT = 0,
+        ELECTION,
+    };
+
+    enum VoteStatus {
+        REJECT = 0,
+        VOTE,
+    };
+
+    enum CodeTypeEnum {
+        NORMAL = 0,
+        POSITION,
+        BADGE,
+    };
+
+   struct permission_level_weight {
+      permission_level  permission;
+      uint16_t          weight;
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( permission_level_weight, (permission)(weight) )
+   };
+
+   struct key_weight {
+      eosio::public_key  key;
+      uint16_t           weight;
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( key_weight, (key)(weight) )
+   };
+
+   struct wait_weight {
+      uint32_t           wait_sec;
+      uint16_t           weight;
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( wait_weight, (wait_sec)(weight) )
+   };
+
+   struct authority {
+      uint32_t                              threshold = 0;
+      std::vector<key_weight>               keys;
+      std::vector<permission_level_weight>  accounts;
+      std::vector<wait_weight>              waits;
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( authority, (threshold)(keys)(accounts)(waits) )
+   };
+
+   struct CodeType {
+        uint8_t type;
+        uint64_t refer_id;
+    };
+
+public:
+    using contract::contract;
+    community(eosio::name receiver, eosio::name code, datastream<const char *> ds) : contract(receiver, code, ds), _communitys(_self, _self.value) {}
+
+    struct execution_code_data {
+      name code_action;
+      vector<char> packed_params;
+   };
+
+    void transfer(name from, name to, asset quantity, string memo);
+
+    ACTION createacc(name community_creator, name community_acc);
+
+    ACTION create(name creator, name community_account, string & community_name, vector<uint64_t> member_badge, string & community_url, string & description, bool create_default_code);
+
+    ACTION initcode(name community_account, name creator, bool create_default_code);
+
+    ACTION initadminpos(name community_account, name creator);
+
+    ACTION proposecode(name community_account, name proposer, name proposal_name, uint64_t code_id, vector<execution_code_data> code_actions);
+
+    ACTION execcode(name community_account, name exec_account, uint64_t code_id, vector<execution_code_data> code_actions);
+
+    ACTION execproposal(name community_account, name proposal_name);
+
+    ACTION verifyholder(name community_account, uint64_t code_id, uint8_t execution_type, name owner);
+
+    ACTION verifyamend(name community_account, uint64_t code_id, uint8_t execution_type, name owner);
+
+    // Code Action
+    ACTION createcode(name community_account, name code_name, name contract_name, vector<name> code_actions);
+
+    // Set excution type of code
+    ACTION setexectype(name community_account, uint64_t code_id, uint8_t exec_type, bool is_amend_code);
+
+    // set right holder for sole decision 
+    ACTION setsoleexec(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids);
+
+    // set right for who can proposal code   
+    ACTION setproposer(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids);
+
+    // set right for who can proposal code   
+    ACTION setapprotype(name community_account, uint64_t code_id, bool is_amend_code, uint8_t approval_type);
+
+    // set right for who can approve or vote for proposal
+    ACTION setapprover(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids);
+
+    // set right for who can approve or vote for proposal
+    ACTION setvoter(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids);
+
+    // set approval consensus requirements for collective decision
+    ACTION setvoterule(name community_account, uint64_t code_id, bool is_amend_code, double pass_rule, uint64_t vote_duration); 
+
+    ACTION voteforcode(name community_account, name proposal_name, name approver, bool vote_status);
+
+    // Code Position
+    ACTION createpos(name community_account, name creator, string pos_name, uint64_t max_holder, uint8_t filled_through);
+
+    ACTION configpos(name community_account, uint64_t pos_id, string pos_name, uint64_t max_holder, uint8_t filled_through, uint64_t term, uint64_t next_term_start_at, uint64_t voting_period, double pass_rule, vector<name> pos_candidate_accounts, vector<name> pos_voter_accounts, vector<uint64_t> pos_candidate_positions, vector<uint64_t> pos_voter_positions);
+
+    ACTION appointpos(name community_account, uint64_t pos_id, vector<name> holder_accounts, const string& appoint_reason);
+
+    ACTION nominatepos(name community_account, uint64_t pos_id, name owner);
+
+    ACTION voteforpos(name community_account, uint64_t pos_id, name voter, name candidate, bool vote_status);
+
+    ACTION approvepos(name community_account, uint64_t pos_id);
+
+    ACTION dismisspos(name community_account, uint64_t pos_id, name holder, const string& dismissal_reason);
+
+    ACTION createbadge(name community_account, name badge_propose_name);
+
+    ACTION issuebadge(name community_account, name badge_propose_name);
+
+private:
+    bool verifyapprov(name community_account, name voter, uint64_t code_id);
+
+    bool verifyvoter(name community_account, name voter, uint64_t code_id);
+
+    bool is_pos_candidate(name community_account, uint64_t pos_id, name owner);
+
+    bool is_pos_voter(name community_account, uint64_t pos_id, name owner);
+
+    uint64_t get_pos_proposed_id();
+
+    void call_action(name community_account, name contract_name, name action_name, vector<char> packed_params) {
+        action sending_action;
+        sending_action.authorization.push_back(permission_level{community_account, "active"_n});
+        sending_action.account = contract_name;
+        sending_action.name = action_name;
+        sending_action.data = packed_params;
+        sending_action.send();
+    }
+
+    uint64_t getposid();
+
+    bool is_amend_action(name calling_action);
+
+    eosio::asset convertbytes2cat(uint32_t bytes);
+
+    TABLE communityf
+    {
+        name community_account;
+        name creator;
+        string community_name;
+        vector<uint64_t> member_badge;
+        string community_url;
+        string description;
+
+        uint64_t primary_key() const { return community_account.value; }
+    };
+
+    typedef eosio::multi_index<"community"_n, communityf> community_table;
+
+    struct RightHolder
+    {
+        bool is_anyone = false;
+        bool is_any_community_member = false;
+        vector<uint64_t> required_badges;
+        vector<uint64_t> required_positions;
+        vector<asset> required_tokens;
+        uint64_t required_exp;
+        vector<name> accounts;
+    };
+
+    // table codes with type sole decision with scope is community_creator
+    TABLE codef
+    {
+        uint64_t code_id;
+        name code_name;
+        name contract_name;
+        vector<name> code_actions;
+        uint8_t code_exec_type = ExecutionType::SOLE_DECISION;
+        uint8_t amendment_exec_type = ExecutionType::SOLE_DECISION;
+        CodeType code_type;
+
+        uint64_t primary_key() const { return code_id; }
+        uint64_t by_code_name() const { return code_name.value; }
+        uint64_t by_reference_id() const { return code_type.refer_id; }
+    };
+
+    typedef eosio::multi_index<"codes"_n, codef, 
+        indexed_by< "by.code.name"_n, const_mem_fun<codef, uint64_t, &codef::by_code_name>>,
+        indexed_by< "by.refer.id"_n, const_mem_fun<codef, uint64_t, &codef::by_reference_id>>
+        > code_table;
+
+    // table code collective rule with scope is community_creator
+    TABLE collective_decision
+    {
+        uint64_t code_id;
+        uint64_t vote_duration;
+        double pass_rule;
+        uint8_t approval_type = ApprovalType::SOLE_APPROVAL;
+        RightHolder right_proposer;
+        RightHolder right_approver;
+        RightHolder right_voter;
+
+        uint64_t primary_key() const { return code_id; }
+    };
+
+    typedef eosio::multi_index<"codevoterule"_n, collective_decision> code_collective_decision_table;
+
+    // table amendment collective rule with scope is community_creator to store collective rule of amemdment code
+    typedef eosio::multi_index<"amenvoterule"_n, collective_decision> ammend_collective_decision_table;
+
+    // table code collective rule with scope is community_creator
+    TABLE sole_decision
+    {
+        uint64_t code_id;
+        RightHolder right_executor;
+
+        uint64_t primary_key() const { return code_id; }
+    };
+
+    typedef eosio::multi_index<"codeexecrule"_n, sole_decision> code_sole_decision_table;
+
+    // table amendment collective rule with scope is community_creator to store collective rule of amemdment code
+    typedef eosio::multi_index<"amenexecrule"_n, sole_decision> amend_sole_decision_table;
+
+    // table code proposals with scope is community_creator
+    TABLE code_proposalf
+    {
+        name proposal_name;
+        name proposer;
+        double voted_percent = 0;
+        uint64_t code_id;
+        vector<execution_code_data> code_actions;
+        map<name, int> voters_detail;
+        uint8_t proposal_status = IN_PROGRESS;
+        time_point propose_time;
+        time_point exec_at;
+
+        uint64_t primary_key() const { return proposal_name.value; }
+        uint64_t by_proposer() const { return proposer.value; }
+        uint64_t by_code_id() const { return code_id; }
+    };
+
+    typedef eosio::multi_index<"coproposals"_n, code_proposalf,
+        indexed_by< "by.proposer"_n, const_mem_fun<code_proposalf, uint64_t, &code_proposalf::by_proposer>>,
+        indexed_by< "by.code.id"_n, const_mem_fun<code_proposalf, uint64_t, &code_proposalf::by_code_id>>
+        > code_proposals_table;
+
+    // table positions with scope is community_account
+    TABLE positionf {
+        uint64_t pos_id;
+        string pos_name;
+        uint64_t max_holder = 0;
+        vector<name> holders;
+        uint8_t fulfillment_type;
+        map<name, uint64_t> refer_codes;
+
+        uint64_t primary_key() const { return pos_id; }
+    };
+    typedef eosio::multi_index<"positions"_n, positionf> position_table;
+
+    // table executed rule with scope is community_account
+    TABLE election_rule {
+        uint64_t pos_id;
+        uint64_t term;
+        time_point next_term_start_at;
+        uint64_t voting_period;
+        double pass_rule;
+        RightHolder pos_candidates;
+        RightHolder pos_voters;
+        uint64_t primary_key() const { return pos_id; }
+    };
+        
+    typedef eosio::multi_index<"fillingrule"_n, election_rule> election_table;    
+
+    // position proposals with scope is community_account
+    TABLE pos_proposal {
+        uint64_t pos_id;
+        uint64_t pos_proposal_id;
+        uint8_t pos_proposal_status;
+        time_point approved_at;
+        uint64_t primary_key() const { return pos_id; }
+    };
+    typedef eosio::multi_index<"posproposal"_n, pos_proposal> posproposal_table;
+
+    // position proposals with scope is community_account
+    TABLE pos_candidate {
+        name cadidate;
+        double voted_percent;
+        map<name, uint64_t> voters_detail;
+        uint64_t primary_key() const { return cadidate.value; }
+        double by_voted_percent() const { return voted_percent;}
+    };
+    typedef eosio::multi_index<"poscandidate"_n, pos_candidate,indexed_by<"byvoted"_n, const_mem_fun<pos_candidate, double, &pos_candidate::by_voted_percent>>> poscandidate_table;
+	/*
+	* global singelton table, used for position id building
+	* Scope: self
+	*/
+	TABLE global{
+		  
+		global(){}
+		uint64_t posproposed_id	= 0;
+
+		EOSLIB_SERIALIZE( global, (posproposed_id) )
+	};
+    typedef eosio::singleton< "global"_n, global> global_table;
+
+    // refer from tiger token contract
+    TABLE account {
+        asset    balance;
+
+        uint64_t primary_key()const { return balance.symbol.code().raw(); }
+    };
+
+    typedef eosio::multi_index< "accounts"_n, account > accounts;
+
+    // refer from crypto-badge contract
+	TABLE ccert
+	{
+		uint64_t                id;
+		name                    owner;
+		name                    issuer;
+		uint64_t                badgeid;
+		checksum256        idata;
+
+		auto primary_key() const { return id;}
+		uint64_t by_issuer() const { return issuer.value;}
+	};
+    typedef eosio::multi_index< "ccerts"_n, ccert,
+			eosio::indexed_by< "issuer"_n, eosio::const_mem_fun<ccert, uint64_t, &ccert::by_issuer> >
+			> ccerts;
+
+    community_table _communitys;
+};
