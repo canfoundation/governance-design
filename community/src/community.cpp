@@ -5,7 +5,7 @@
 
 const symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
 const symbol ram_symbol = symbol(symbol_code("RAM"), 0);
-const symbol CORE_SYMBOL = symbol(symbol_code("SYS"), 4);
+const symbol CORE_SYMBOL = symbol(symbol_code("CAT"), 4);
 const uint64_t init_ram_amount = 10 * 1024;
 const asset stake_net = asset(1'0000, CORE_SYMBOL);
 const asset stake_cpu = asset(1'0000, CORE_SYMBOL);
@@ -315,7 +315,7 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
         }
         else
         {
-            check(code_itr->amendment_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::INVALID_EXEC_TYPE::Can not execute collective decision code, please use crtproposal action");
+            check(code_itr->amendment_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::INVALID_EXEC_TYPE::Can not execute collective decision code, please use proposecode action");
             action(
                 permission_level{get_self(), "active"_n},
                 get_self(),
@@ -342,10 +342,9 @@ ACTION community::proposecode(name community_account, name proposer, name propos
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
     
     for (auto execution_data: code_actions) {
-        check(std::find(code_itr->code_actions.begin(), code_itr->code_actions.end(), execution_data.code_action) != code_itr->code_actions.end(), "ERR::VERIFY_FAILED::Action doesn't exist.");
-
         if (!is_amend_action(execution_data.code_action))
         {
+            check(std::find(code_itr->code_actions.begin(), code_itr->code_actions.end(), execution_data.code_action) != code_itr->code_actions.end(), "ERR::VERIFY_FAILED::Action doesn't exist.");
             check(code_itr->code_exec_type == ExecutionType::COLLECTIVE_DECISION, "ERR::INVALID_EXEC_TYPE::Can not create proposal for sole decision code");
             // Verify Right Holder
              action(
@@ -566,7 +565,7 @@ ACTION community::verifyamend(name community_account, uint64_t code_id, uint8_t 
         ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
         auto amend_vote_rule_itr = _amend_vote_rule.find(code_id);
 
-        check(amend_vote_rule_itr != _amend_vote_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code execution rule has not been initialize yet");
+        check(amend_vote_rule_itr != _amend_vote_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code vote rule has not been initialize yet");
 
         right_holder = amend_vote_rule_itr->right_proposer;
     }
@@ -796,7 +795,7 @@ ACTION community::setproposer(name community_account, uint64_t code_id, bool is_
     _right_holder.required_positions = right_pos_ids;
 
     if (is_amend_code) {
-        check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set proposer for sole decision code");
+        // check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set proposer for sole decision code");
 
         ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
 
@@ -841,7 +840,7 @@ ACTION community::setapprotype(name community_account, uint64_t code_id, bool is
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
 
     if (is_amend_code) {
-        check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
+        // check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approval type for sole decision code");
 
         ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
 
@@ -858,7 +857,7 @@ ACTION community::setapprotype(name community_account, uint64_t code_id, bool is
             });
         }
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
+        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approval type for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -898,7 +897,7 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
 
 
     if (is_amend_code) {
-        check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
+        // check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
 
         ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
 
@@ -947,7 +946,7 @@ ACTION community::setvoter(name community_account, uint64_t code_id, bool is_ame
 
 
     if (is_amend_code) {
-        check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
+        // check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set voter for sole decision code");
 
         ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
 
@@ -960,7 +959,7 @@ ACTION community::setvoter(name community_account, uint64_t code_id, bool is_ame
                 row.right_voter = _right_holder;
         });
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
+        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set voter for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -984,7 +983,7 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
 
     if (is_amend_code) {
-        check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set collective rule for sole decision code");
+        // check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set collective rule for sole decision code");
 
         ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
 
@@ -1037,30 +1036,8 @@ ACTION community::voteforcode(name community_account, name proposal_name, name a
                 call_action(community_account, code_itr->contract_name, action.code_action, action.packed_params);
                 is_executed = true;
             } else {
-                check(verifyvoter(community_account, approver, proposal_itr->code_id), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
+                check(verifyvoter(community_account, approver, proposal_itr->code_id, false), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
                 check(collective_exec_itr->vote_duration + proposal_itr->propose_time.sec_since_epoch() > current_time_point().sec_since_epoch(), "ERR::VOTING_ENDED::Voting for this proposal has ben ended");
-
-                double voted_percent;
-                map<name, int> new_voters_detail = proposal_itr->voters_detail;
-                uint64_t total_participation = proposal_itr->voters_detail.size();
-                uint64_t total_voted = round((proposal_itr->voted_percent * total_participation) / 100);
-                map<name, int>::const_iterator voter_detail_itr = proposal_itr->voters_detail.find(approver);
-                if (voter_detail_itr == proposal_itr->voters_detail.end())
-                {
-                    new_voters_detail.insert(pair<name, int>(approver, vote_status));
-                    voted_percent = double((vote_status == VOTE ? total_voted + 1 : total_voted) * 100) / (total_participation + 1);
-                }
-                else
-                {
-                    check(voter_detail_itr->second != vote_status, "ERR::VOTE_DUPLICATE::The voter has already voted for this code with the same status");
-                    voted_percent = double((vote_status == VOTE ? total_voted + 1 : total_voted - 1) * 100) / total_participation;
-                    new_voters_detail[approver] = vote_status;
-                }
-
-                _proposals.modify(proposal_itr, approver, [&](auto &row) {
-                    row.voted_percent = voted_percent;
-                    row.voters_detail = new_voters_detail;
-                });
             }
         } else {
             ammend_collective_decision_table _collective_exec(_self, community_account.value);
@@ -1071,40 +1048,52 @@ ACTION community::voteforcode(name community_account, name proposal_name, name a
                 call_action(community_account, code_itr->contract_name, action.code_action, action.packed_params);
                 is_executed = true;
             } else {
-                check(verifyvoter(community_account, approver, proposal_itr->code_id), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
+                check(verifyvoter(community_account, approver, proposal_itr->code_id, true), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
                 check(collective_exec_itr->vote_duration + proposal_itr->propose_time.sec_since_epoch() > current_time_point().sec_since_epoch(), "ERR::VOTING_ENDED::Voting for this proposal has ben ended");
-
-                double voted_percent;
-                map<name, int> new_voters_detail = proposal_itr->voters_detail;
-                uint64_t total_participation = proposal_itr->voters_detail.size();
-                uint64_t total_voted = round((proposal_itr->voted_percent * total_participation) / 100);
-                map<name, int>::const_iterator voter_detail_itr = proposal_itr->voters_detail.find(approver);
-                if (voter_detail_itr == proposal_itr->voters_detail.end())
-                {
-                    new_voters_detail.insert(pair<name, int>(approver, vote_status));
-                    voted_percent = double((vote_status == VOTE ? total_voted + 1 : total_voted) * 100) / (total_participation + 1);
-                }
-                else
-                {
-                    check(voter_detail_itr->second != vote_status, "ERR::VOTE_DUPLICATE::The voter has already voted for this code with the same status");
-                    voted_percent = double((vote_status == VOTE ? total_voted + 1 : total_voted - 1) * 100) / total_participation;
-                    new_voters_detail[approver] = vote_status;
-                }
-
-                _proposals.modify(proposal_itr, approver, [&](auto &row) {
-                    row.voted_percent = voted_percent;
-                    row.voters_detail = new_voters_detail;
-                });
             }
         }
     }
+
+    double voted_percent;
+    map<name, int> new_voters_detail = proposal_itr->voters_detail;
+    uint64_t total_participation = proposal_itr->voters_detail.size();
+    uint64_t total_voted = round((proposal_itr->voted_percent * total_participation) / 100);
+    map<name, int>::const_iterator voter_detail_itr = proposal_itr->voters_detail.find(approver);
+    if (voter_detail_itr == proposal_itr->voters_detail.end())
+    {
+        new_voters_detail.insert(pair<name, int>(approver, vote_status));
+        voted_percent = double((vote_status == VOTE ? total_voted + 1 : total_voted) * 100) / (total_participation + 1);
+    } else {
+        // check(voter_detail_itr->second != vote_status, "ERR::VOTE_DUPLICATE::The voter has already voted for this code with the same status");
+        voted_percent = double((vote_status == VOTE ? total_voted + 1 : total_voted - 1) * 100) / total_participation;
+        new_voters_detail[approver] = vote_status;
+    }
+
+    _proposals.modify(proposal_itr, approver, [&](auto &row) {
+        row.voted_percent = voted_percent;
+        row.voters_detail = new_voters_detail;
+    });
 
     if (is_executed) {
         _proposals.erase(proposal_itr);
     }
 }
 
-ACTION community::createpos(name community_account, name creator, string pos_name, uint64_t max_holder, uint8_t filled_through)
+ACTION community::createpos(
+    name community_account,
+    name creator,
+    string pos_name,
+    uint64_t max_holder,
+    uint8_t filled_through,
+    uint64_t term,
+    uint64_t next_term_start_at,
+    uint64_t voting_period,
+    double pass_rule,
+    vector<name> pos_candidate_accounts,
+    vector<name> pos_voter_accounts,
+    vector<uint64_t> pos_candidate_positions,
+    vector<uint64_t> pos_voter_positions
+    )
 {
     require_auth(community_account);
 
@@ -1205,13 +1194,18 @@ ACTION community::createpos(name community_account, name creator, string pos_nam
         {PO_Appoint, appointCode->code_id},
         {PO_Dismiss, dismissCode->code_id}};
 
-    _positions.emplace(community_account, [&](auto &row) {
+    auto newPosition = _positions.emplace(community_account, [&](auto &row) {
         row.pos_id = _positions.available_primary_key();
         row.pos_name = pos_name;
-        row.max_holder = max_holder;
-        row.fulfillment_type = filled_through;
         row.refer_codes = refer_codes;
     });
+
+    action(
+        permission_level{get_self(), "active"_n},
+        get_self(),
+        "configpos"_n,
+        std::make_tuple(community_account, newPosition->pos_id, pos_name, max_holder, filled_through, term, next_term_start_at, voting_period, pass_rule, pos_candidate_accounts, pos_voter_accounts, pos_candidate_positions, pos_voter_positions))
+        .send();
 }
 
 ACTION community::initadminpos(name community_account, name creator)
@@ -1594,21 +1588,32 @@ ACTION community::issuebadge(name community_account, name badge_propose_name)
         .send();
 }
 
-bool community::verifyvoter(name community_account, name voter, uint64_t code_id)
+bool community::verifyvoter(name community_account, name voter, uint64_t code_id, bool is_amend_code)
 {
     bool is_right_holder = false;
 
-    code_collective_decision_table _collective_exec(_self, community_account.value);
-    position_table _positions(_self, community_account.value);
+    RightHolder right_voter;
+    if (is_amend_code) {
+        ammend_collective_decision_table _collective_exec(_self, community_account.value);
 
-    auto collective_exec_itr = _collective_exec.find(code_id);
+        auto collective_exec_itr = _collective_exec.find(code_id);
 
-    auto _account_right_holders = collective_exec_itr->right_voter.accounts;
+        right_voter = collective_exec_itr->right_voter;
+    } else {
+        code_collective_decision_table _collective_exec(_self, community_account.value);
+
+        auto collective_exec_itr = _collective_exec.find(code_id);
+
+        right_voter = collective_exec_itr->right_voter;
+    }
+
+    auto _account_right_holders = right_voter.accounts;
 
     is_right_holder = std::find(_account_right_holders.begin(), _account_right_holders.end(), voter) != _account_right_holders.end();
 
-    auto _position_right_holder_ids = collective_exec_itr->right_voter.required_positions;
+    auto _position_right_holder_ids = right_voter.required_positions;
 
+    position_table _positions(_self, community_account.value);
     for (int i = 0; i < _position_right_holder_ids.size(); i++)
     {
         auto position_itr = _positions.find(_position_right_holder_ids[i]);

@@ -151,9 +151,37 @@ public:
     ACTION voteforcode(name community_account, name proposal_name, name approver, bool vote_status);
 
     // Code Position
-    ACTION createpos(name community_account, name creator, string pos_name, uint64_t max_holder, uint8_t filled_through);
+    ACTION createpos(
+        name community_account,
+        name creator,
+        string pos_name,
+        uint64_t max_holder,
+        uint8_t filled_through,
+        uint64_t term,
+        uint64_t next_term_start_at,
+        uint64_t voting_period,
+        double pass_rule,
+        vector<name> pos_candidate_accounts,
+        vector<name> pos_voter_accounts,
+        vector<uint64_t> pos_candidate_positions,
+        vector<uint64_t> pos_voter_positions
+    );
 
-    ACTION configpos(name community_account, uint64_t pos_id, string pos_name, uint64_t max_holder, uint8_t filled_through, uint64_t term, uint64_t next_term_start_at, uint64_t voting_period, double pass_rule, vector<name> pos_candidate_accounts, vector<name> pos_voter_accounts, vector<uint64_t> pos_candidate_positions, vector<uint64_t> pos_voter_positions);
+    ACTION configpos(
+        name community_account,
+        uint64_t pos_id,
+        string pos_name,
+        uint64_t max_holder,
+        uint8_t filled_through,
+        uint64_t term,
+        uint64_t next_term_start_at,
+        uint64_t voting_period,
+        double pass_rule,
+        vector<name> pos_candidate_accounts,
+        vector<name> pos_voter_accounts,
+        vector<uint64_t> pos_candidate_positions,
+        vector<uint64_t> pos_voter_positions
+    );
 
     ACTION appointpos(name community_account, uint64_t pos_id, vector<name> holder_accounts, const string& appoint_reason);
 
@@ -172,7 +200,7 @@ public:
 private:
     bool verifyapprov(name community_account, name voter, uint64_t code_id);
 
-    bool verifyvoter(name community_account, name voter, uint64_t code_id);
+    bool verifyvoter(name community_account, name voter, uint64_t code_id, bool is_amend_code);
 
     bool is_pos_candidate(name community_account, uint64_t pos_id, name owner);
 
@@ -204,10 +232,11 @@ private:
         string community_url;
         string description;
 
+        uint64_t by_creator() const { return creator.value; }
         uint64_t primary_key() const { return community_account.value; }
     };
 
-    typedef eosio::multi_index<"community"_n, communityf> community_table;
+    typedef eosio::multi_index<"community"_n, communityf, indexed_by< "by.creator"_n, const_mem_fun<communityf, uint64_t, &communityf::by_creator>>> community_table;
 
     struct RightHolder
     {
@@ -319,6 +348,7 @@ private:
         double pass_rule;
         RightHolder pos_candidates;
         RightHolder pos_voters;
+
         uint64_t primary_key() const { return pos_id; }
     };
         
