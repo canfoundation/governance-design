@@ -743,7 +743,7 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
 
     if (is_amend_code) {
         amend_sole_decision_table _execution_rule(_self, community_account.value);
-        check(code_itr->amendment_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::VERIFY_FAILED::Can not set execution rule for collective decision code");
+        // check(code_itr->amendment_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::VERIFY_FAILED::Can not set execution rule for collective decision code");
         auto amend_execution_rule_itr = _execution_rule.find(code_id);
 
         if (amend_execution_rule_itr != _execution_rule.end()) {
@@ -758,7 +758,7 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
         }
     } else {
         code_sole_decision_table _execution_rule(_self, community_account.value);
-        check(code_itr->code_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::VERIFY_FAILED::Can not set execution rule for collective decision code");
+        // check(code_itr->code_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::VERIFY_FAILED::Can not set execution rule for collective decision code");
 
         auto code_execution_rule_itr = _execution_rule.find(code_id);
 
@@ -812,7 +812,7 @@ ACTION community::setproposer(name community_account, uint64_t code_id, bool is_
             });
         }
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set proposer for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set proposer for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -857,7 +857,7 @@ ACTION community::setapprotype(name community_account, uint64_t code_id, bool is
             });
         }
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approval type for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approval type for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -910,7 +910,7 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
                 row.right_approver = _right_holder;
         });
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -959,7 +959,7 @@ ACTION community::setvoter(name community_account, uint64_t code_id, bool is_ame
                 row.right_voter = _right_holder;
         });
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set voter for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set voter for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -996,7 +996,7 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
                 row.pass_rule = pass_rule;
         });
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set collective rule for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set collective rule for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
