@@ -340,6 +340,9 @@ ACTION community::proposecode(name community_account, name proposer, name propos
 
     auto code_itr = _codes.find(code_id);
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
+
+    eosio::transaction auto_execute;
+    auto_execute.actions.emplace_back(eosio::permission_level{community_account, "active"_n}, _self, "execproposal"_n, std::make_tuple(community_account, proposal_name));
     
     for (auto execution_data: code_actions) {
         if (!is_amend_action(execution_data.code_action))
@@ -357,6 +360,8 @@ ACTION community::proposecode(name community_account, name proposer, name propos
             code_collective_decision_table _collective_exec(_self, community_account.value);
             auto collective_exec_itr = _collective_exec.find(code_id);
             check(collective_exec_itr != _collective_exec.end(), "ERR::COLLECTIVE_NOT_EXISTED::The collective rule is not exist, please initialize it before create proposal");
+
+            auto_execute.delay_sec = collective_exec_itr->vote_duration;
         }
         else
         {
@@ -372,6 +377,8 @@ ACTION community::proposecode(name community_account, name proposer, name propos
             ammend_collective_decision_table _collective_exec(_self, community_account.value);
             auto collective_exec_itr = _collective_exec.find(code_id);
             check(collective_exec_itr != _collective_exec.end(), "ERR::COLLECTIVE_NOT_EXISTED::The collective rule is not exist, please initialize it before create proposal");
+
+            auto_execute.delay_sec = collective_exec_itr->vote_duration + 1;
         }
     }
 
@@ -382,6 +389,9 @@ ACTION community::proposecode(name community_account, name proposer, name propos
         row.propose_time = current_time_point();
         row.code_actions = code_actions;
     });
+
+    auto_execute.send(proposal_name.value, _self, true);
+
 }
 
 ACTION community::execproposal(name community_account, name proposal_name)
@@ -404,7 +414,7 @@ ACTION community::execproposal(name community_account, name proposal_name)
             check(collective_exec_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::EXECUTE_SOLE_APPROVAL_PROPOSAL::Can not execute sole approval proposal");
 
             // check that voting time has been ended
-            check(proposal_itr->propose_time.sec_since_epoch() + collective_exec_itr->vote_duration < current_time_point().sec_since_epoch(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
+            check(proposal_itr->propose_time.sec_since_epoch() + collective_exec_itr->vote_duration <= current_time_point().sec_since_epoch(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
 
             // check that code has been accepted by voter or not
             check(proposal_itr->voted_percent > collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been aceepted by voter");
@@ -427,7 +437,7 @@ ACTION community::execproposal(name community_account, name proposal_name)
             check(collective_exec_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::EXECUTE_SOLE_APPROVAL_PROPOSAL::Can not execute sole approval proposal");
 
             // check that voting time has been ended
-            check(proposal_itr->propose_time.sec_since_epoch() + collective_exec_itr->vote_duration < current_time_point().sec_since_epoch(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
+            check(proposal_itr->propose_time.sec_since_epoch() + collective_exec_itr->vote_duration <= current_time_point().sec_since_epoch(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
 
             // check that code has been accepted by voter or not
             check(proposal_itr->voted_percent > collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been aceepted by voter");
@@ -1338,11 +1348,10 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
 
     if (filled_through == FillingType::ELECTION)
     {
-        uint64_t votting_start_date = next_term_start_at - voting_period;
+        uint64_t votting_start_date = next_term_start_at - seconds_per_day - voting_period;
+        uint64_t votting_end_date = next_term_start_at - seconds_per_day;
 
-        check(voting_period > seconds_per_day, "ERR::TIME_INVALID::Voting period should be greater than one day.");
         check(votting_start_date > current_time_point().sec_since_epoch(), "ERR::START_TIME_INVALID::Voting start date must greater than now.");
-        // check(next_term_start_at -  seconds_per_day> current_time_point().sec_since_epoch(), "ERR::TIME_INVALID::Next start term plus 1 day must greater than now.");
         RightHolder _pos_candidates;
         _pos_candidates.accounts = pos_candidate_accounts;
         _pos_candidates.required_positions = pos_candidate_positions;
@@ -1377,6 +1386,26 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
                 row.pos_voters = _pos_voters;
             });
         }
+
+        posproposal_table _pos_proposal(_self, community_account.value);
+        auto posproposal_itr = _pos_proposal.find(pos_id);
+
+        if (posproposal_itr == _pos_proposal.end()) {
+            _pos_proposal.emplace(community_account, [&](auto &row) {
+                row.pos_id = pos_id;
+                row.pos_proposal_id = get_pos_proposed_id();
+                row.pos_proposal_status = ProposalStatus::IN_PROGRESS;
+            });
+        } else {
+            _pos_proposal.modify(posproposal_itr, community_account, [&](auto &row) {
+                row.pos_proposal_status = ProposalStatus::IN_PROGRESS;
+            });
+        }
+
+        eosio::transaction auto_execute;
+        auto_execute.actions.emplace_back(eosio::permission_level{community_account, "active"_n}, _self, "approvepos"_n, std::make_tuple(community_account, pos_id));
+        auto_execute.delay_sec = votting_end_date - current_time_point().sec_since_epoch();
+        auto_execute.send(pos_id, _self, true);
     }
 }
 
@@ -1419,7 +1448,7 @@ ACTION community::nominatepos(name community_account, uint64_t pos_id, name owne
 
     poscandidate_table _poscandidate(_self, posproposal_itr->pos_proposal_id);
     auto candidate_itr = _poscandidate.find(owner.value);
-    check(candidate_itr == _poscandidate.end(), "ERR::CANDIDATE_ESIXT::The candidate already exist");
+    check(candidate_itr == _poscandidate.end(), "ERR::CANDIDATE_EXIST::The candidate already exist");
 
     _poscandidate.emplace(owner, [&](auto &row) {
         row.cadidate = owner;
@@ -1443,10 +1472,10 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
     auto election_itr = _electionrule.find(pos_id);
     check(election_itr != _electionrule.end(), "ERR::FILLING_RULE_NOT_EXIST::Position need filling rules.");
 
-    uint64_t votting_start_date = election_itr->next_term_start_at.sec_since_epoch() - election_itr->voting_period;
+    uint64_t votting_start_date = election_itr->next_term_start_at.sec_since_epoch() - seconds_per_day - election_itr->voting_period;
     uint64_t votting_end_date = election_itr->next_term_start_at.sec_since_epoch() - seconds_per_day;
 
-    check(votting_start_date <= current_time_point().sec_since_epoch() && votting_end_date >= current_time_point().sec_since_epoch(), "ERR::START_END_TIME_INVALID::Start as must greater than now.");
+    check(votting_start_date <= current_time_point().sec_since_epoch() && votting_end_date >= current_time_point().sec_since_epoch(), "ERR::START_END_TIME_INVALID::Voting for this position have been expired.");
 
     posproposal_table _posproposal(_self, community_account.value);
     auto posproposal_itr = _posproposal.find(pos_id);
@@ -1493,10 +1522,10 @@ ACTION community::approvepos(name community_account, uint64_t pos_id)
     election_table _electionrule(_self, community_account.value);
     auto election_itr = _electionrule.find(pos_id);
     check(election_itr != _electionrule.end(), "ERR::FILLING_RULE_NOT_EXIST::Position need filling rules.");
-    uint64_t votting_start_date = election_itr->next_term_start_at.sec_since_epoch() - election_itr->voting_period;
+    uint64_t votting_start_date = election_itr->next_term_start_at.sec_since_epoch() - seconds_per_day - election_itr->voting_period;
     uint64_t votting_end_date = election_itr->next_term_start_at.sec_since_epoch() - seconds_per_day;
 
-    check(votting_end_date < current_time_point().sec_since_epoch(), "ERR::END_TIME_INVALID::End voting date should be expired.");
+    check(votting_end_date <= current_time_point().sec_since_epoch(), "ERR::END_TIME_INVALID::End voting date should be expired.");
 
     posproposal_table _pos_proposal(_self, community_account.value);
     auto posproposal_itr = _pos_proposal.find(pos_id);
