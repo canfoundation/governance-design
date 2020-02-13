@@ -235,7 +235,7 @@ ACTION setvoterule(
 ---
 
 ```c++
-ACTION execcode(name community_account, name exec_account, uint64_t code_id, name code_action, vector<char> packed_params);
+ACTION execcode(name community_account, name exec_account, uint64_t code_id, vector<execution_code_data> code_actions);
 ```
 
 ## community::execcode execute a code
@@ -248,8 +248,31 @@ ACTION execcode(name community_account, name exec_account, uint64_t code_id, nam
    - **community_account** community account
    - **exec_account** right holder account (account who sign to execute this action)
    - **code_id** the code's id
-   - **code_action** the code's action
-   - **packed_params** the code's action which was convered to binary 
+   - **code_actions** list of actions and packed parameters to execute action
+      - **code_action** name of the action
+      - **packed_params**: packed parameters to exectute action
+
+---
+
+```c++
+ACTION proposecode(name community_account, name proposer, name proposal_name, uint64_t code_id, vector<execution_code_data> code_actions);
+```
+
+## community::create the proposal
+### Description:
+- In case execution type of code is COLLECTIVE_DECISSION, use this action to create proposal of code
+- action will check the right holder of proposer, and save proposal to table
+- ram fee of this action will be paid proposer
+
+### Parameters:
+   - **community_account** community account
+   - **proposer** right proposer account (account who sign to execute this action)
+   - **code_id** the code's id
+   - **code_actions** list of actions and packed parameters to execute action
+      - **code_action** name of the action
+      - **packed_params**: packed parameters to exectute action
+
+---
 
 ```c++
 ACTION execproposal(name community_account, name proposal_name);
@@ -578,39 +601,39 @@ $ cleos get table governance23 community241 codeexecrule
 ```bash
 // last parameter is identify set for amendment code (1 is set for amendment code, 0 is set for code)
 $ cleos convert pack_action_data governance23 setexectype '["community241", 2, 1, 0]'
-2088f0d94d2d254501000000000000000100
+108af0d94d2d254504000000000000000100
 ```
 
 2. pack `setapprotype` action data to set approval type of code proposal (approval type 1 is approval consensus):
 ```bash
 $ cleos convert pack_action_data governance23 setapprotype '["community241", 2, 0, 1]'
-2088f0d94d2d254501000000000000000001
+108af0d94d2d254504000000000000000001
 ```
 
 3. pack setproposer action data to set proposer right holder of `co.access` with code_id 3:
 
 ```bash
 $ cleos convert pack_action_data governance23 setproposer '["community241", 2, 0, ["quyvoplayers"], []]'
-2088f0d94d2d25450100000000000000000180aff22656babdb600
+108af0d94d2d25450400000000000000000180aff22656babdb600
 ```
 
 4. pack action data `setvoter` to set voter of proposal:
 
 ```bash
 cleos convert pack_action_data governance23 setvoter '["community241", 2, 0, ["quyvoplayers"], []]'
-2088f0d94d2d25450100000000000000000180aff22656babdb600
+108af0d94d2d25450400000000000000000180aff22656babdb600
 ```
 
 5. pack action data `setvoterule` to set vote rule of proposal:
 ```bash
 cleos convert pack_action_data governance23 setvoterule '["community241", 2, 0, 60, 600]'
-2088f0d94d2d25450100000000000000000000000000004e405802000000000000
+108af0d94d2d25450400000000000000000000000000004e405802000000000000
 ```
 
 6. use action `execcode` to execute above action, amend execution type is the special case, even `setexectype`, `setproposer`, `setvoter`, `setvoterule` action is not exist in the code, but `execcode` action with automatically know it is use for changing the execiton type:
 
 ```bash
-cleos push action governance23 execcode '["community241", "quocleplayer", 2, [["setexectype", "2088f0d94d2d254501000000000000000100"], ["setapprotype", "2088f0d94d2d254501000000000000000001"], ["setproposer", "2088f0d94d2d25450100000000000000000180aff22656babdb600"], ["setvoter", "2088f0d94d2d25450100000000000000000180aff22656babdb600"], ["setvoterule", "2088f0d94d2d25450100000000000000000000000000004e405802000000000000"]]]' -p quocleplayer
+cleos push action governance23 execcode '["community241", "quocleplayer", 2, [["setexectype", "108af0d94d2d254504000000000000000100"], ["setapprotype", "108af0d94d2d254504000000000000000001"], ["setproposer", "108af0d94d2d25450400000000000000000180aff22656babdb600"], ["setvoter", "108af0d94d2d25450400000000000000000180aff22656babdb600"], ["setvoterule", "108af0d94d2d25450400000000000000000000000000004e405802000000000000"]]]' -p quocleplayer
 ```
 
 
@@ -678,6 +701,107 @@ $ cleos get table governance23 community241 codevoterule
 
 ##### set right holder for amendment execution right
 
+1. pack setexectype action data to set execution type of `co.access` with code_id 3 to collective decision (1):
+
+```bash
+// last parameter is identify set for amendment code (1 is set for amendment code, 0 is set for code)
+$ cleos convert pack_action_data governance23 setexectype '["community241", 2, 1, 1]'
+108af0d94d2d254504000000000000000101
+```
+
+2. pack `setapprotype` action data to set approval type of code proposal (approval type 1 is approval consensus):
+```bash
+$ cleos convert pack_action_data governance23 setapprotype '["community241", 2, 1, 1]'
+108af0d94d2d254504000000000000000101
+```
+
+3. pack setproposer action data to set proposer right holder of `co.access` with code_id 3:
+
+```bash
+$ cleos convert pack_action_data governance23 setproposer '["community241", 2, 1, ["quyvoplayers"], []]'
+108af0d94d2d25450400000000000000010180aff22656babdb600
+```
+
+4. pack action data `setvoter` to set voter of proposal:
+
+```bash
+cleos convert pack_action_data governance23 setvoter '["community241", 2, 1, ["quyvoplayers"], []]'
+108af0d94d2d25450400000000000000010180aff22656babdb600
+```
+
+5. pack action data `setvoterule` to set vote rule of proposal:
+```bash
+cleos convert pack_action_data governance23 setvoterule '["community241", 2, 1, 60, 600]'
+108af0d94d2d25450400000000000000010000000000004e405802000000000000
+```
+
+6. use action `execcode` to execute above action, amend execution type is the special case, even `setexectype`, `setproposer`, `setvoter`, `setvoterule` action is not exist in the code, but `execcode` action with automatically know it is use for changing the execiton type:
+
+```bash
+cleos push action governance23 execcode '["community241", "quocleplayer", 2, [["setapprotype", "108af0d94d2d254504000000000000000101"], ["setproposer", "108af0d94d2d25450400000000000000010180aff22656babdb600"], ["setvoter", "108af0d94d2d25450400000000000000010180aff22656babdb600"], ["setvoterule", "108af0d94d2d25450400000000000000010000000000004e405802000000000000"], ["setexectype", "108af0d94d2d254504000000000000000101"]]]' -p quocleplayer
+```
+
+7. get code and amenvoterule table to check:
+
+```bash
+$ cleos get table governance23 community241 codes
+{
+      "code_id": 2,
+      "code_name": "co.access",
+      "contract_name": "governance23",
+      "code_actions": [
+        "accesscode"
+      ],
+      "code_exec_type": 1,
+      "amendment_exec_type": 0,
+      "code_type": {
+        "type": 0,
+        "refer_id": 0
+}
+
+$ cleos get table governance23 community241 amenvoterule
+{
+  "rows": [{
+      "code_id": 3,
+      "vote_duration": 600,
+      "pass_rule": "60.00000000000000000",
+      "approval_type": 1,
+      "right_proposer": {
+        "is_anyone": 0,
+        "is_any_community_member": 0,
+        "required_badges": [],
+        "required_positions": [],
+        "required_tokens": [],
+        "required_exp": 0,
+        "accounts": [
+          "quyvoplayers"
+        ]
+      },
+      "right_approver": {
+        "is_anyone": 0,
+        "is_any_community_member": 0,
+        "required_badges": [],
+        "required_positions": [],
+        "required_tokens": [],
+        "required_exp": 0,
+        "accounts": []
+      },
+      "right_voter": {
+        "is_anyone": 0,
+        "is_any_community_member": 0,
+        "required_badges": [],
+        "required_positions": [],
+        "required_tokens": [],
+        "required_exp": 0,
+        "accounts": [
+          "quyvoplayers"
+        ]
+      }
+    }
+  ],
+  "more": false
+}
+```
 ---
 
 ### create new code

@@ -428,6 +428,38 @@
                 {
                     "name": "filled_through",
                     "type": "uint8"
+                },
+                {
+                    "name": "term",
+                    "type": "uint64"
+                },
+                {
+                    "name": "next_term_start_at",
+                    "type": "uint64"
+                },
+                {
+                    "name": "voting_period",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pass_rule",
+                    "type": "float64"
+                },
+                {
+                    "name": "pos_candidate_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "pos_voter_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "pos_candidate_positions",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "pos_voter_positions",
+                    "type": "uint64[]"
                 }
             ]
         },
