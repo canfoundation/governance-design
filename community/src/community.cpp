@@ -1201,7 +1201,7 @@ ACTION community::createpos(
     });
 
     action(
-        permission_level{get_self(), "active"_n},
+        permission_level{community_account, "active"_n},
         get_self(),
         "configpos"_n,
         std::make_tuple(community_account, newPosition->pos_id, pos_name, max_holder, filled_through, term, next_term_start_at, voting_period, pass_rule, pos_candidate_accounts, pos_voter_accounts, pos_candidate_positions, pos_voter_positions))
@@ -1331,7 +1331,6 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
     check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::Position id doesn't exist.");
 
     _positions.modify(pos_itr, community_account, [&](auto &row) {
-        row.pos_id = _positions.available_primary_key();
         row.pos_name = pos_name;
         row.max_holder = max_holder;
         row.fulfillment_type = filled_through;
