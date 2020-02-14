@@ -1339,9 +1339,8 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
     if (filled_through == FillingType::ELECTION)
     {
         uint64_t votting_start_date = next_term_start_at - voting_period;
-        uint64_t votting_end_date = next_term_start_at - seconds_per_day;
 
-        check(votting_end_date > votting_start_date, "ERR::TIME_INVALID::Max holder should be a positive value.");
+        check(voting_period > seconds_per_day, "ERR::TIME_INVALID::Voting period should be greater than one day.");
         check(votting_start_date > current_time_point().sec_since_epoch(), "ERR::START_TIME_INVALID::Voting start date must greater than now.");
         // check(next_term_start_at -  seconds_per_day> current_time_point().sec_since_epoch(), "ERR::TIME_INVALID::Next start term plus 1 day must greater than now.");
         RightHolder _pos_candidates;
