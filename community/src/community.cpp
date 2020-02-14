@@ -743,7 +743,7 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
 
     if (is_amend_code) {
         amend_sole_decision_table _execution_rule(_self, community_account.value);
-        check(code_itr->amendment_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::VERIFY_FAILED::Can not set execution rule for collective decision code");
+        // check(code_itr->amendment_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::VERIFY_FAILED::Can not set execution rule for collective decision code");
         auto amend_execution_rule_itr = _execution_rule.find(code_id);
 
         if (amend_execution_rule_itr != _execution_rule.end()) {
@@ -758,7 +758,7 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
         }
     } else {
         code_sole_decision_table _execution_rule(_self, community_account.value);
-        check(code_itr->code_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::VERIFY_FAILED::Can not set execution rule for collective decision code");
+        // check(code_itr->code_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::VERIFY_FAILED::Can not set execution rule for collective decision code");
 
         auto code_execution_rule_itr = _execution_rule.find(code_id);
 
@@ -812,7 +812,7 @@ ACTION community::setproposer(name community_account, uint64_t code_id, bool is_
             });
         }
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set proposer for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set proposer for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -857,7 +857,7 @@ ACTION community::setapprotype(name community_account, uint64_t code_id, bool is
             });
         }
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approval type for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approval type for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -910,7 +910,7 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
                 row.right_approver = _right_holder;
         });
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -959,7 +959,7 @@ ACTION community::setvoter(name community_account, uint64_t code_id, bool is_ame
                 row.right_voter = _right_holder;
         });
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set voter for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set voter for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -996,7 +996,7 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
                 row.pass_rule = pass_rule;
         });
     } else {
-        check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set collective rule for sole decision code");
+        // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set collective rule for sole decision code");
 
         code_collective_decision_table _code_vote_rule(_self, community_account.value);
 
@@ -1201,7 +1201,7 @@ ACTION community::createpos(
     });
 
     action(
-        permission_level{get_self(), "active"_n},
+        permission_level{community_account, "active"_n},
         get_self(),
         "configpos"_n,
         std::make_tuple(community_account, newPosition->pos_id, pos_name, max_holder, filled_through, term, next_term_start_at, voting_period, pass_rule, pos_candidate_accounts, pos_voter_accounts, pos_candidate_positions, pos_voter_positions))
@@ -1331,7 +1331,6 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
     check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::Position id doesn't exist.");
 
     _positions.modify(pos_itr, community_account, [&](auto &row) {
-        row.pos_id = _positions.available_primary_key();
         row.pos_name = pos_name;
         row.max_holder = max_holder;
         row.fulfillment_type = filled_through;
@@ -1340,9 +1339,8 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
     if (filled_through == FillingType::ELECTION)
     {
         uint64_t votting_start_date = next_term_start_at - voting_period;
-        uint64_t votting_end_date = next_term_start_at - seconds_per_day;
 
-        check(votting_end_date > votting_start_date, "ERR::TIME_INVALID::Max holder should be a positive value.");
+        check(voting_period > seconds_per_day, "ERR::TIME_INVALID::Voting period should be greater than one day.");
         check(votting_start_date > current_time_point().sec_since_epoch(), "ERR::START_TIME_INVALID::Voting start date must greater than now.");
         // check(next_term_start_at -  seconds_per_day> current_time_point().sec_since_epoch(), "ERR::TIME_INVALID::Next start term plus 1 day must greater than now.");
         RightHolder _pos_candidates;
