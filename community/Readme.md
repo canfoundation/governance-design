@@ -601,7 +601,7 @@ $ cleos get table governance23 community241 codeexecrule
 ```bash
 // last parameter is identify set for amendment code (1 is set for amendment code, 0 is set for code)
 $ cleos convert pack_action_data governance23 setexectype '["community241", 2, 1, 0]'
-108af0d94d2d254504000000000000000100
+208af0d94d2d254529000000000000000000
 ```
 
 2. pack `setapprotype` action data to set approval type of code proposal (approval type 1 is approval consensus):
