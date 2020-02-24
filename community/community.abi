@@ -264,6 +264,76 @@
             ]
         },
         {
+            "name": "configbadge",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "badge_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "issue_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "update_badge_proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "issue_exec_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "issue_sole_right_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "issue_sole_right_pos_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "issue_proposer_right_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "issue_proposer_right_pos_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "issue_approval_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "issue_approver_right_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "issue_approver_right_pos_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "issue_voter_right_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "issue_voter_right_pos_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "issue_pass_rule",
+                    "type": "float64"
+                },
+                {
+                    "name": "issue_vote_duration",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
             "name": "configpos",
             "base": "",
             "fields": [
@@ -378,8 +448,64 @@
                     "type": "name"
                 },
                 {
+                    "name": "badge_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "issue_type",
+                    "type": "uint8"
+                },
+                {
                     "name": "badge_propose_name",
                     "type": "name"
+                },
+                {
+                    "name": "issue_exec_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "issue_sole_right_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "issue_sole_right_pos_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "issue_proposer_right_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "issue_proposer_right_pos_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "issue_approval_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "issue_approver_right_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "issue_approver_right_pos_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "issue_voter_right_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "issue_voter_right_pos_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "issue_pass_rule",
+                    "type": "float64"
+                },
+                {
+                    "name": "issue_vote_duration",
+                    "type": "uint64"
                 }
             ]
         },
@@ -1057,6 +1183,11 @@
         {
             "name": "approvepos",
             "type": "approvepos",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "configbadge",
+            "type": "configbadge",
             "ricardian_contract": ""
         },
         {

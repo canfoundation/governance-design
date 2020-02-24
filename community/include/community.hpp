@@ -56,6 +56,11 @@ CONTRACT community : public contract
         BADGE,
     };
 
+    enum BadgeIssueType {
+        WITHOUT_CLAIM = 0,
+        CLAIM_APPROVE_BY_ISSUER,
+    };
+
    struct permission_level_weight {
       permission_level  permission;
       uint16_t          weight;
@@ -193,7 +198,43 @@ public:
 
     ACTION dismisspos(name community_account, uint64_t pos_id, name holder, const string& dismissal_reason);
 
-    ACTION createbadge(name community_account, name badge_propose_name);
+    ACTION createbadge(
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        name badge_propose_name,
+        uint8_t issue_exec_type,
+        vector<name> issue_sole_right_accounts,
+        vector<uint64_t> issue_sole_right_pos_ids,
+        vector<name> issue_proposer_right_accounts,
+        vector<uint64_t> issue_proposer_right_pos_ids,
+        uint8_t issue_approval_type,
+        vector<name> issue_approver_right_accounts,
+        vector<uint64_t> issue_approver_right_pos_ids,
+        vector<name> issue_voter_right_accounts,
+        vector<uint64_t> issue_voter_right_pos_ids,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration
+    );
+
+    ACTION configbadge(
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        name update_badge_proposal_name,
+        uint8_t issue_exec_type,
+        vector<name> issue_sole_right_accounts,
+        vector<uint64_t> issue_sole_right_pos_ids,
+        vector<name> issue_proposer_right_accounts,
+        vector<uint64_t> issue_proposer_right_pos_ids,
+        uint8_t issue_approval_type,
+        vector<name> issue_approver_right_accounts,
+        vector<uint64_t> issue_approver_right_pos_ids,
+        vector<name> issue_voter_right_accounts,
+        vector<uint64_t> issue_voter_right_pos_ids,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration
+    );
 
     ACTION issuebadge(name community_account, name badge_propose_name);
 
