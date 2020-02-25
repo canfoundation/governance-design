@@ -10,6 +10,9 @@
 
 using namespace eosio;
 using namespace std;
+
+#include "constant.hpp"
+
 CONTRACT community : public contract
 {
 
