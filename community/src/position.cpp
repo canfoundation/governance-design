@@ -1,4 +1,8 @@
-ACTION community::createpos(
+#include "../include/position.hpp"
+#include <math.h>
+#include <eosio/permission.hpp>
+
+ACTION position::createpos(
     name community_account,
     name creator,
     string pos_name,
@@ -32,9 +36,6 @@ ACTION community::createpos(
     auto newPositionId = _positions.available_primary_key();
 
     RightHolder _init_right_holder;
-
-    auto com_itr = _communitys.find(community_account.value);
-    check(com_itr != _communitys.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
 
     _init_right_holder.accounts.push_back(creator);
 
@@ -127,7 +128,7 @@ ACTION community::createpos(
         .send();
 }
 
-ACTION community::initadminpos(name community_account, name creator)
+ACTION position::initadminpos(name community_account, name creator)
 {
     require_auth(community_account);
 
@@ -146,9 +147,6 @@ ACTION community::initadminpos(name community_account, name creator)
 
     vector<name> init_admin_holder;
     init_admin_holder.push_back(creator);
-
-    auto com_itr = _communitys.find(community_account.value);
-    check(com_itr != _communitys.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
 
     _init_right_holder.required_positions.push_back(newPositionId);
 
@@ -237,7 +235,7 @@ ACTION community::initadminpos(name community_account, name creator)
     });
 }
 
-ACTION community::configpos(name community_account, uint64_t pos_id, string pos_name, uint64_t max_holder, uint8_t filled_through, uint64_t term, uint64_t next_term_start_at, uint64_t voting_period, double pass_rule, vector<name> pos_candidate_accounts, vector<name> pos_voter_accounts, vector<uint64_t> pos_candidate_positions, vector<uint64_t> pos_voter_positions)
+ACTION position::configpos(name community_account, uint64_t pos_id, string pos_name, uint64_t max_holder, uint8_t filled_through, uint64_t term, uint64_t next_term_start_at, uint64_t voting_period, double pass_rule, vector<name> pos_candidate_accounts, vector<name> pos_voter_accounts, vector<uint64_t> pos_candidate_positions, vector<uint64_t> pos_voter_positions)
 {
     require_auth(community_account);
 
@@ -319,7 +317,7 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
     }
 }
 
-ACTION community::appointpos(name community_account, uint64_t pos_id, vector<name> holder_accounts, const string &appoint_reason)
+ACTION position::appointpos(name community_account, uint64_t pos_id, vector<name> holder_accounts, const string &appoint_reason)
 {
     require_auth(community_account);
 
@@ -334,7 +332,7 @@ ACTION community::appointpos(name community_account, uint64_t pos_id, vector<nam
     });
 }
 
-ACTION community::nominatepos(name community_account, uint64_t pos_id, name owner)
+ACTION position::nominatepos(name community_account, uint64_t pos_id, name owner)
 {
     require_auth(owner);
 
@@ -366,7 +364,7 @@ ACTION community::nominatepos(name community_account, uint64_t pos_id, name owne
     });
 }
 
-ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter, name candidate, bool vote_status)
+ACTION position::voteforpos(name community_account, uint64_t pos_id, name voter, name candidate, bool vote_status)
 {
     require_auth(voter);
 
@@ -419,7 +417,7 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
     });
 }
 
-ACTION community::approvepos(name community_account, uint64_t pos_id)
+ACTION position::approvepos(name community_account, uint64_t pos_id)
 {
     require_auth(community_account);
 
@@ -472,7 +470,7 @@ ACTION community::approvepos(name community_account, uint64_t pos_id)
     });
 }
 
-ACTION community::dismisspos(name community_account, uint64_t pos_id, name holder, const string &dismissal_reason)
+ACTION position::dismisspos(name community_account, uint64_t pos_id, name holder, const string &dismissal_reason)
 {
     require_auth(community_account);
 
@@ -487,4 +485,69 @@ ACTION community::dismisspos(name community_account, uint64_t pos_id, name holde
     _positions.modify(pos_itr, community_account, [&](auto &row) {
         row.holders = _holders;
     });
+}
+
+bool position::is_position_exist(name community_account, vector<uint64_t> position_ids)
+{
+    position_table _positions(_self, community_account.value);
+    for (auto pos_id : position_ids)
+    {
+        auto pos_itr = _positions.find(pos_id);
+        if (pos_itr == _positions.end())
+            return false;
+    }
+    return true;
+}
+
+bool position::is_position_holder(name community_account, vector<uint64_t> position_ids, name owner)
+{
+    position_table _positions(_self, community_account.value);
+    bool is_right_position = (position_ids.size() == 0);
+    for (int i = 0; i < position_ids.size(); i++)
+    {
+        auto position_itr = _positions.find(position_ids[i]);
+        auto _position_holders = position_itr->holders;
+        if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
+        {
+            is_right_position = true;
+            break;
+        }
+    }
+    return is_right_position;
+}
+
+bool position::is_pos_candidate(name community_account, uint64_t pos_id, name owner)
+{
+
+    election_table _electionrule(_self, community_account.value);
+    auto election_itr = _electionrule.find(pos_id);
+    check(election_itr != _electionrule.end(), "ERR::ELECTION_RULE_NOT_EXIST::Position need election rules.");
+    auto _pos_candidate_holder = election_itr->pos_candidates.accounts;
+
+    return std::find(_pos_candidate_holder.begin(), _pos_candidate_holder.end(), owner) != _pos_candidate_holder.end();
+}
+
+bool position::is_pos_voter(name community_account, uint64_t pos_id, name owner)
+{
+    election_table _electionrule(_self, community_account.value);
+    auto election_itr = _electionrule.find(pos_id);
+    check(election_itr != _electionrule.end(), "ERR::ELECTION_RULE_NOT_EXIST::Position need election rules.");
+    auto _pos_voter_holder = election_itr->pos_voters.accounts;
+
+    return std::find(_pos_voter_holder.begin(), _pos_voter_holder.end(), owner) != _pos_voter_holder.end();
+}
+
+/*
+* Increment, save and return id for a new position.
+*/
+uint64_t position::get_pos_proposed_id()
+{
+
+    global_table config(_self, _self.value);
+    auto _cstate = config.exists() ? config.get() : global{};
+
+    ++_cstate.posproposed_id;
+
+    config.set(_cstate, _self);
+    return _cstate.posproposed_id;
 }

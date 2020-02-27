@@ -1,0 +1,1 @@
+//usr/local/bin/eosio-ld  CMakeFiles/community.wasm.dir/code.cpp.o CMakeFiles/community.wasm.dir/position.cpp.o CMakeFiles/community.wasm.dir/badge.cpp.o CMakeFiles/community.wasm.dir/community.cpp.o -o community.wasm 

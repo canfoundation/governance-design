@@ -1,0 +1,3 @@
+/Users/vohongquy/can_project/governance-design/community/CMakeFiles/rebuild_cache.dir
+/Users/vohongquy/can_project/governance-design/community/CMakeFiles/edit_cache.dir
+/Users/vohongquy/can_project/governance-design/community/CMakeFiles/community.wasm.dir
