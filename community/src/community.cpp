@@ -1104,7 +1104,6 @@ ACTION community::createpos(
     uint64_t term,
     uint64_t next_term_start_at,
     uint64_t voting_period,
-    double pass_rule,
     vector<name> pos_candidate_accounts,
     vector<name> pos_voter_accounts,
     vector<uint64_t> pos_candidate_positions,
@@ -1220,7 +1219,7 @@ ACTION community::createpos(
         permission_level{community_account, "active"_n},
         get_self(),
         "configpos"_n,
-        std::make_tuple(community_account, newPosition->pos_id, pos_name, max_holder, filled_through, term, next_term_start_at, voting_period, pass_rule, pos_candidate_accounts, pos_voter_accounts, pos_candidate_positions, pos_voter_positions))
+        std::make_tuple(community_account, newPosition->pos_id, pos_name, max_holder, filled_through, term, next_term_start_at, voting_period, pos_candidate_accounts, pos_voter_accounts, pos_candidate_positions, pos_voter_positions))
         .send();
 }
 
@@ -1334,7 +1333,7 @@ ACTION community::initadminpos(name community_account, name creator)
     });
 }
 
-ACTION community::configpos(name community_account, uint64_t pos_id, string pos_name, uint64_t max_holder, uint8_t filled_through, uint64_t term, uint64_t next_term_start_at, uint64_t voting_period, double pass_rule, vector<name> pos_candidate_accounts, vector<name> pos_voter_accounts, vector<uint64_t> pos_candidate_positions, vector<uint64_t> pos_voter_positions)
+ACTION community::configpos(name community_account, uint64_t pos_id, string pos_name, uint64_t max_holder, uint8_t filled_through, uint64_t term, uint64_t next_term_start_at, uint64_t voting_period, vector<name> pos_candidate_accounts, vector<name> pos_voter_accounts, vector<uint64_t> pos_candidate_positions, vector<uint64_t> pos_voter_positions)
 {
     require_auth(community_account);
 
@@ -1376,7 +1375,6 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
                 row.term = term;
                 row.next_term_start_at = time_point_sec(next_term_start_at);
                 row.voting_period = voting_period;
-                row.pass_rule = pass_rule;
                 row.pos_candidates = _pos_candidates;
                 row.pos_voters = _pos_voters;
             });
@@ -1387,7 +1385,6 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
                 row.term = term;
                 row.next_term_start_at = time_point_sec(next_term_start_at);
                 row.voting_period = voting_period;
-                row.pass_rule = pass_rule;
                 row.pos_candidates = _pos_candidates;
                 row.pos_voters = _pos_voters;
             });
@@ -1547,7 +1544,7 @@ ACTION community::approvepos(name community_account, uint64_t pos_id)
 
     for (auto it = idx.cbegin(); it != idx.cend() && top_candidates.size() <= pos_itr->max_holder; ++it)
     {
-        if (it->voted_percent >= election_itr->pass_rule)
+        if (it->voted_percent > 0)
             top_candidates.emplace_back(it->cadidate);
     }
 

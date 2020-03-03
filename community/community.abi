@@ -370,10 +370,6 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "pass_rule",
-                    "type": "float64"
-                },
-                {
                     "name": "pos_candidate_accounts",
                     "type": "name[]"
                 },
@@ -568,10 +564,6 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "pass_rule",
-                    "type": "float64"
-                },
-                {
                     "name": "pos_candidate_accounts",
                     "type": "name[]"
                 },
@@ -630,10 +622,6 @@
                 {
                     "name": "voting_period",
                     "type": "uint64"
-                },
-                {
-                    "name": "pass_rule",
-                    "type": "float64"
                 },
                 {
                     "name": "pos_candidates",
