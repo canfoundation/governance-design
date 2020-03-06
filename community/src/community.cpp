@@ -141,6 +141,11 @@ ACTION community::create(name creator, name community_account, string &community
         row.description = description;
     });
 
+    accession default_accession;
+    default_accession.right_access.is_any_community_member = true;
+    accession_table _accession(_self, community_account.value);
+    _accession.set(default_accession, creator);
+
     // init template code
     action(
         permission_level{community_account, "active"_n},
@@ -148,6 +153,20 @@ ACTION community::create(name creator, name community_account, string &community
         "initcode"_n,
         std::make_tuple(community_account, creator, create_default_code))
         .send();
+}
+
+ACTION community::setaccess(name community_account, bool is_anyone, bool is_any_community_member, vector<name> right_accounts, vector<uint64_t> right_badge_ids, vector<uint64_t> right_pos_ids)
+{
+    require_auth(community_account);
+    
+    accession default_accession;
+    default_accession.right_access.is_anyone = is_anyone;
+    default_accession.right_access.is_any_community_member = is_any_community_member;
+    default_accession.right_access.accounts = right_accounts;
+    default_accession.right_access.required_positions = right_pos_ids;
+    default_accession.right_access.required_badges = right_badge_ids;
+    accession_table _accession(_self, community_account.value);
+    _accession.set(default_accession, community_account);
 }
 
 ACTION community::initcode(name community_account, name creator, bool create_default_code)
@@ -232,7 +251,7 @@ ACTION community::initcode(name community_account, name creator, bool create_def
         if (getByCodeId.find(CO_Access.value) == getByCodeId.end())
         {
             _init_actions.clear();
-            _init_actions.push_back("accesscode"_n);
+            _init_actions.push_back("setaccess"_n);
 
             // initialize createcode code
             auto co_access_code = _codes.emplace(community_account, [&](auto &row) {
@@ -2041,6 +2060,7 @@ EOSIO_ABI_CUSTOM(community,
 (setapprotype)
 (setvoter)
 (setapprover)
+(setaccess)
 (transfer)
 (verifyamend)
 (createacc)

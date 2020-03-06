@@ -59,6 +59,25 @@ ACTION create(
    - **creator** who was created the community
    - **create_default_code**  option to add default code: `co.access`, `po.create`, `ba.create`, `ba.issue`
 ---
+
+```c++
+    ACTION setaccess(name community_account, bool is_anyone, bool is_any_community_member, vector<name> right_accounts, vector<uint64_t> right_badge_ids, vector<uint64_t> right_pos_ids);
+```
+
+## community::setaccess set who can access community
+### Description:
+- set who can access community
+- inline action called by `execcode` action under community account permission
+
+### Parameters:
+   - **community_account** community account
+   - **is_anyone** is any one can access community
+   - **is_any_community_member**  is any community member can access community
+   - **right_accounts**  list of account can access community
+   - **right_badge_ids**  list of badge ids can access community
+   - **right_pos_ids**  list of position ids can access community
+---
+
 ```c++
 ACTION createcode(
         name community_account,
@@ -586,6 +605,67 @@ $ cleos get table governance23 community241 codeexecrule
 }
 ````
 
+### set who can access community
+1. pack action data of `setaccess` action
+```bash
+cleos convert pack_action_data governance24 setaccess '["community314", 1, 1, ["quyvo", "daniel"], [1, 2], [99, 123]]'
+```
+2. get id of `co.access` code
+```bash
+cleos get table governance24 community314 codes --index 2 --key-type i64 -L co.access -U co.access
+{
+  "rows": [{
+      "code_id": 2,
+      "code_name": "co.access",
+      "contract_name": "governance24",
+      "code_actions": [
+        "setaccess"
+      ],
+      "code_exec_type": 0,
+      "amendment_exec_type": 0,
+      "code_type": {
+        "type": 0,
+        "refer_id": 0
+      }
+    }
+  ],
+  "more": false
+}
+```
+
+3. execute `setaccess` action of `co.access` code:
+```bash
+cleos push action governance24 execcode '["community314", "quocleplayer", 2, [["setaccess", "40c2f0d94d2d25450101020000000000babdb60000000044e5a64902010000000000000002000000000000000263000000000000007b00000000000000"]]]' -p quocleplayer
+```
+
+4. get table `accession` to verify
+```bash
+cleos get table governance24 community314 accession                                                                                                                     130 ↵
+{
+  "rows": [{
+      "right_access": {
+        "is_anyone": 1,
+        "is_any_community_member": 1,
+        "required_badges": [
+          1,
+          2
+        ],
+        "required_positions": [
+          99,
+          123
+        ],
+        "required_tokens": [],
+        "required_exp": 0,
+        "accounts": [
+          "quyvo",
+          "daniel"
+        ]
+      }
+    }
+  ],
+  "more": false
+}
+```
 
 ### use amend code to config code code_execution_right
 
