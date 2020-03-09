@@ -52,6 +52,16 @@
             ]
         },
         {
+            "name": "accession",
+            "base": "",
+            "fields": [
+                {
+                    "name": "right_access",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
             "name": "account",
             "base": "",
             "fields": [
@@ -882,6 +892,36 @@
             ]
         },
         {
+            "name": "setaccess",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "is_anyone",
+                    "type": "bool"
+                },
+                {
+                    "name": "is_any_community_member",
+                    "type": "bool"
+                },
+                {
+                    "name": "right_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "right_badge_ids",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "right_pos_ids",
+                    "type": "uint64[]"
+                }
+            ]
+        },
+        {
             "name": "setapprotype",
             "base": "",
             "fields": [
@@ -1249,6 +1289,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "setaccess",
+            "type": "setaccess",
+            "ricardian_contract": ""
+        },
+        {
             "name": "setapprotype",
             "type": "setapprotype",
             "ricardian_contract": ""
@@ -1305,6 +1350,13 @@
         }
     ],
     "tables": [
+        {
+            "name": "accession",
+            "type": "accession",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
         {
             "name": "accounts",
             "type": "account",

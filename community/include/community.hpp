@@ -115,6 +115,8 @@ public:
 
     ACTION create(name creator, name community_account, string & community_name, vector<uint64_t> member_badge, string & community_url, string & description, bool create_default_code);
 
+    ACTION setaccess(name community_account, bool is_anyone, bool is_any_community_member, vector<name> right_accounts, vector<uint64_t> right_badge_ids, vector<uint64_t> right_pos_ids);
+
     ACTION initcode(name community_account, name creator, bool create_default_code);
 
     ACTION initadminpos(name community_account, name creator);
@@ -262,6 +264,17 @@ private:
 
     eosio::asset convertbytes2cat(uint32_t bytes);
 
+    struct RightHolder
+    {
+        bool is_anyone = false;
+        bool is_any_community_member = false;
+        vector<uint64_t> required_badges;
+        vector<uint64_t> required_positions;
+        vector<asset> required_tokens;
+        uint64_t required_exp;
+        vector<name> accounts;
+    };
+
     TABLE communityf
     {
         name community_account;
@@ -277,16 +290,12 @@ private:
 
     typedef eosio::multi_index<"community"_n, communityf, indexed_by< "by.creator"_n, const_mem_fun<communityf, uint64_t, &communityf::by_creator>>> community_table;
 
-    struct RightHolder
+    TABLE accession
     {
-        bool is_anyone = false;
-        bool is_any_community_member = false;
-        vector<uint64_t> required_badges;
-        vector<uint64_t> required_positions;
-        vector<asset> required_tokens;
-        uint64_t required_exp;
-        vector<name> accounts;
+        RightHolder right_access;
     };
+
+    typedef eosio::singleton<"accession"_n, accession> accession_table;
 
     // table codes with type sole decision with scope is community_creator
     TABLE codef
