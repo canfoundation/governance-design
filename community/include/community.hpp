@@ -165,7 +165,6 @@ public:
         uint64_t term,
         uint64_t next_term_start_at,
         uint64_t voting_period,
-        double pass_rule,
         vector<name> pos_candidate_accounts,
         vector<name> pos_voter_accounts,
         vector<uint64_t> pos_candidate_positions,
@@ -181,7 +180,6 @@ public:
         uint64_t term,
         uint64_t next_term_start_at,
         uint64_t voting_period,
-        double pass_rule,
         vector<name> pos_candidate_accounts,
         vector<name> pos_voter_accounts,
         vector<uint64_t> pos_candidate_positions,
@@ -386,7 +384,6 @@ private:
         uint64_t term;
         time_point next_term_start_at;
         uint64_t voting_period;
-        double pass_rule;
         RightHolder pos_candidates;
         RightHolder pos_voters;
 
@@ -411,7 +408,7 @@ private:
         double voted_percent;
         map<name, uint64_t> voters_detail;
         uint64_t primary_key() const { return cadidate.value; }
-        double by_voted_percent() const { return voted_percent;}
+        double by_voted_percent() const { return -voted_percent;}
     };
     typedef eosio::multi_index<"poscandidate"_n, pos_candidate,indexed_by<"byvoted"_n, const_mem_fun<pos_candidate, double, &pos_candidate::by_voted_percent>>> poscandidate_table;
 	/*
