@@ -17,6 +17,8 @@ This contract provides multiple functionalities:
 
 # Actions:
 
+## community::create create new community
+
 ```c++
 ACTION create(
   name creator, 
@@ -28,8 +30,6 @@ ACTION create(
   bool create_default_code
 );
 ```
-
-## community::create create new community
 
 ### Description:
 - update information of community
@@ -45,11 +45,12 @@ ACTION create(
    - **create_default_code** 0: NO, 1: YES, an option to add other default code: `co.amend`, `po.create`, `co.access`, `ba.create`
 
 ---
+
+## community::initcode add default code
+
 ```c++
     ACTION initcode(name community_account, name creator, bool create_default_code);
 ```
-
-## community::initcode add default code
 ### Description:
 - inline action called when create community
 - init default code `co.amend` and `co.access`, `po.create`, `ba.create` if create_default_code is true.
@@ -60,11 +61,12 @@ ACTION create(
    - **create_default_code**  option to add default code: `co.access`, `po.create`, `ba.create`, `ba.issue`
 ---
 
+## community::setaccess set who can access community
+
 ```c++
     ACTION setaccess(name community_account, bool is_anyone, bool is_any_community_member, vector<name> right_accounts, vector<uint64_t> right_badge_ids, vector<uint64_t> right_pos_ids);
 ```
 
-## community::setaccess set who can access community
 ### Description:
 - set who can access community
 - inline action called by `execcode` action under community account permission
@@ -78,6 +80,8 @@ ACTION create(
    - **right_pos_ids**  list of position ids can access community
 ---
 
+## community::create new code
+
 ```c++
 ACTION createcode(
         name community_account,
@@ -87,7 +91,6 @@ ACTION createcode(
     );
 ```
 
-## community::create new code
 ### Description:
 - create new code for community
 - inline action called by `execcode` action under community account permission
@@ -98,6 +101,9 @@ ACTION createcode(
    - **contract_name** the contract name this code will call when execute
    - **code_actions** the actions of this code
 ---
+
+## community::set execution type
+
 ```c++
 ACTION setexectype(
         name community_account,
@@ -107,7 +113,6 @@ ACTION setexectype(
     );
 ```
 
-## community::set execution type
 ### Description:
 - set execution type for code
 - inline action called by `execcode` action under community account permission
@@ -119,6 +124,8 @@ ACTION setexectype(
    - **is_amend_code** is this action set for amend code
 ---
 
+## community::set right holder for sole execution type of code
+
 ```c++
 ACTION setsoleexec(
         name community_account, 
@@ -129,7 +136,6 @@ ACTION setsoleexec(
     );
 ```
 
-## community::set right holder for sole execution type of code
 ### Description:
 - set right holder for sole exection type of code
 - The one who satisfy the requirement can execute code directly without voting
@@ -142,6 +148,8 @@ ACTION setsoleexec(
    - **is_amend_code** is this action set for amend code
 ---
 
+## community::set requirement for the one who can create proposal
+
 ```c++
 ACTION setproposer(
         name community_account,
@@ -152,7 +160,6 @@ ACTION setproposer(
     );
 ```
 
-## community::set requirement for the one who can create proposal
 ### Description:
 - set requirement for the one who can create proposal in case code has execution type is COLLECTIVE_DECISION
 
@@ -164,6 +171,8 @@ ACTION setproposer(
    - **is_amend_code** is this action set for amend code
 ---
 
+## community::set approval type for code proposal
+
 ```c++
 ACTION setapprotype(
         name community_account,
@@ -173,7 +182,6 @@ ACTION setapprotype(
     );
 ```
 
-## community::set approval type for code proposal
 ### Description:
 - if approval_type is SOLE_APPROVAL, the one who meet the requirement can approve and execute code action directly
 - if approval_type is APPROVAL_CONSENSUS, the one who meet the requirement can vote for the proposal
@@ -185,6 +193,8 @@ ACTION setapprotype(
    - **is_amend_code** is this action set for amend code
 ---
 
+## community::set requirement for the one who can create approve for proposal
+
 ```c++
 ACTION setapprover(
         name community_account,
@@ -195,7 +205,6 @@ ACTION setapprover(
     );
 ```
 
-## community::set requirement for the one who can create approve for proposal
 ### Description:
 - set requirement for the one who can approve the proposal in case code has execution type is COLLECTIVE_DECISION
 - action can only use for code with approval_type is SOLE_APPROVAL, the one who meet the requirement can approve and execute code action directly
@@ -208,6 +217,8 @@ ACTION setapprover(
    - **is_amend_code** is this action set for amend code
 ---
 
+## community::set requirement for the one who can create approve for proposal
+
 ```c++
 ACTION setapprover(
         name community_account,
@@ -218,7 +229,6 @@ ACTION setapprover(
     );
 ```
 
-## community::set requirement for the one who can create approve for proposal
 ### Description:
 - set requirement for the one who can vote in case code has execution type is COLLECTIVE_DECISION
 - action can only use for code with approval_type is APPROVAL_CONSENSUS, the one who meet the requirement can vote for proposal
@@ -231,6 +241,8 @@ ACTION setapprover(
    - **is_amend_code** is this action set for amend code
 ---
 
+## community::set vote rule for code 
+
 ```c++
 ACTION setvoterule(
         name community_account,
@@ -241,7 +253,6 @@ ACTION setvoterule(
     ); 
 ```
 
-## community::set vote rule for code 
 ### Description:
 - set vote rule for code in case that code has execution type is COLLECTIVE_DECISION and 
 
@@ -253,11 +264,12 @@ ACTION setvoterule(
    - **is_amend_code** is this action set for amend code
 ---
 
+## community::execcode execute a code
+
 ```c++
 ACTION execcode(name community_account, name exec_account, uint64_t code_id, vector<execution_code_data> code_actions);
 ```
 
-## community::execcode execute a code
 ### Description:
 - the middle action to execute the code
 - action will check the right holder of executor, and call inline action to the contract and action of executing code under community account permission
@@ -273,11 +285,12 @@ ACTION execcode(name community_account, name exec_account, uint64_t code_id, vec
 
 ---
 
+## community::create the proposal
+
 ```c++
 ACTION proposecode(name community_account, name proposer, name proposal_name, uint64_t code_id, vector<execution_code_data> code_actions);
 ```
 
-## community::create the proposal
 ### Description:
 - In case execution type of code is COLLECTIVE_DECISSION, use this action to create proposal of code
 - action will check the right holder of proposer, and save proposal to table
@@ -293,10 +306,12 @@ ACTION proposecode(name community_account, name proposer, name proposal_name, ui
 
 ---
 
+## community::execproposal execute a code with type election decision
+
 ```c++
 ACTION execproposal(name community_account, name proposal_name);
 ```
-## community::execproposal execute a code with type election decision
+
 ### Description:
 - execute code proposal
 - voting for this proposal must be ended
@@ -309,11 +324,12 @@ ACTION execproposal(name community_account, name proposal_name);
 
 ---
 
+## community::voteforcode vote or approve for the proposal of code
+
 ```c++
 ACTION voteforcode(name community_account, name proposal_name, name approver, bool vote_status);
 ```
 
-## community::voteforcode vote or approve for the proposal of code
 ### Description:
 - voter or approver call this action to vote or approve for proposal of code
 - execute under voter/approver permission
@@ -330,11 +346,13 @@ ACTION voteforcode(name community_account, name proposal_name, name approver, bo
    - **vote_status** 0: UNVOTE, 1: VOTE
    
 ---
+
+## community::createpos create new position
+
 ```c++
 ACTION community::createpos(name community_account, name creator, string pos_name, uint64_t max_holder, uint8_t filled_through)
 ```
 
-## community::createpos create new position
 ### Description:
 
 ### Parameters:
@@ -345,6 +363,8 @@ ACTION community::createpos(name community_account, name creator, string pos_nam
    - **filled_through** how to fill the holder for this position, 0 APOINTMENT, 1 ELECTION
 
 ---
+
+## community::configpos 
 
 ```c++
 ACTION configpos(
@@ -362,6 +382,9 @@ ACTION configpos(
   vector<uint64_t> pos_voter_positions);
 ```
 ---
+
+## community::appointpos 
+
 ```c++
 ACTION appointpos(
   name community_account,
@@ -370,29 +393,32 @@ ACTION appointpos(
   const string& appoint_reason);
 ```
 
-## community::appointpos 
    - executor: community
    - **community_account** community account
    - **pos_id** the pos's id
    - **holder_accounts** the candidate list
 
 ---
+
+## community::nominatepos 
+
 ```c++
 ACTION nominatepos(name community_account, uint64_t pos_id, name owner);
 ```
 
-## community::nominatepos 
    - executor: Position right holder
    - **community_account** community account
    - **pos_id** the poisition's id
    - **owner** nominate themself to an position.
 
 ---
+
+## community::voteforpos
+
 ```c++
 ACTION voteforpos(name community_account, uint64_t pos_id, name voter, name candidate, bool vote_status);
 ```
 
-## community::voteforpos 
    - executor: voter refer community::setfillrule:right_accounts
    - **community_account** community account
    - **pos_id** the poisition's id
@@ -400,27 +426,34 @@ ACTION voteforpos(name community_account, uint64_t pos_id, name voter, name cand
    - **vote_status** 0: UNVOTE, 1: VOTE
 
 ---
+
+## community::approvepos The action should be executed after the election
+
 ```c++
 ACTION approvepos(name community_account, uint64_t pos_id);
 ```
 
-## community::approvepos The action should be executed after the election
    - executor: community
    - **community_account** community account
    - **pos_id** the code's id
   
 ---
+
+## ACTION dissmisspos(name community_account, uint64_t pos_id, name holder);
+
 ```c++
 ACTION dismisspos(name community_account, uint64_t pos_id, name holder, const string& dismissal_reason);
 ```
 
-## ACTION dissmisspos(name community_account, uint64_t pos_id, name holder);
    - executor: community
    - **community_account** community account
    - **pos_id** the poisition's id
    - **holder** the holder's account
 
 ---
+
+## community::createbadge create new badge
+
 ```c++
 ACTION createbadge(
         name community_account,
@@ -460,6 +493,8 @@ ACTION createbadge(
 
 ---
 
+## community::configbadge config or update badge
+
 ```c++
 ACTION configbadge(
         name community_account,
@@ -498,6 +533,8 @@ ACTION configbadge(
 - **issue_vote_duration**: duration to vote for proposal
 
 ---
+
+## community::issuebadge issue badge
 
 ```c++
 ACTION issuebadge(name community_account, name badge_propose_name);
