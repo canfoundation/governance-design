@@ -343,7 +343,9 @@ ACTION community::createpos(name community_account, name creator, string pos_nam
    - **pos_name** position's name
    - **max_holder** the maximum holder for position
    - **filled_through** how to fill the holder for this position, 0 APOINTMENT, 1 ELECTION
-   
+
+---
+
 ```c++
 ACTION configpos(
   name community_account, 
@@ -359,7 +361,7 @@ ACTION configpos(
   vector<uint64_t> pos_candidate_positions, 
   vector<uint64_t> pos_voter_positions);
 ```
-
+---
 ```c++
 ACTION appointpos(
   name community_account,
@@ -374,6 +376,7 @@ ACTION appointpos(
    - **pos_id** the pos's id
    - **holder_accounts** the candidate list
 
+---
 ```c++
 ACTION nominatepos(name community_account, uint64_t pos_id, name owner);
 ```
@@ -384,6 +387,7 @@ ACTION nominatepos(name community_account, uint64_t pos_id, name owner);
    - **pos_id** the poisition's id
    - **owner** nominate themself to an position.
 
+---
 ```c++
 ACTION voteforpos(name community_account, uint64_t pos_id, name voter, name candidate, bool vote_status);
 ```
@@ -395,6 +399,7 @@ ACTION voteforpos(name community_account, uint64_t pos_id, name voter, name cand
    - **candidate** the position right holder
    - **vote_status** 0: UNVOTE, 1: VOTE
 
+---
 ```c++
 ACTION approvepos(name community_account, uint64_t pos_id);
 ```
@@ -404,6 +409,7 @@ ACTION approvepos(name community_account, uint64_t pos_id);
    - **community_account** community account
    - **pos_id** the code's id
   
+---
 ```c++
 ACTION dismisspos(name community_account, uint64_t pos_id, name holder, const string& dismissal_reason);
 ```
@@ -414,13 +420,91 @@ ACTION dismisspos(name community_account, uint64_t pos_id, name holder, const st
    - **pos_id** the poisition's id
    - **holder** the holder's account
 
+---
 ```c++
-ACTION createbadge(name community_account, name badge_propose_name);
+ACTION createbadge(
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        name badge_propose_name,
+        uint8_t issue_exec_type,
+        vector<name> issue_sole_right_accounts,
+        vector<uint64_t> issue_sole_right_pos_ids,
+        vector<name> issue_proposer_right_accounts,
+        vector<uint64_t> issue_proposer_right_pos_ids,
+        uint8_t issue_approval_type,
+        vector<name> issue_approver_right_accounts,
+        vector<uint64_t> issue_approver_right_pos_ids,
+        vector<name> issue_voter_right_accounts,
+        vector<uint64_t> issue_voter_right_pos_ids,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration
+);
 ```
+- **community_account**: community account name,
+- **badge_id**: id of badge,
+- **issue_type**: badge issue type, refer to [document](https://docs.google.com/document/edit?hgd=1&id=1ZRQLixZ1_r-8xgYnkyWP0WfHBbSpcIKbOJ6RYg6XMXc#)
+- **badge_propose_name**: multisig proposal name to create badge,
+- **issue_exec_type**: SOLE_EXECUTION or COLLECTIVE_EXECUTION, execution type of issue badge code of this badge,
+- **issue_sole_right_accounts**: in case of issue_exec_type is SOLE_EXECUTION, account in this list can exectute issue badge code right a way.
+- **issue_sole_right_pos_ids**: in case of issue_exec_type is SOLE_EXECUTION, holder of position in this list can exectute issue badge code right a way.,
+- **issue_proposer_right_accounts**: in case of issue_exec_type is COLLECTIVE_EXECUTION, account in this list can create proposal to issue badge
+- **issue_proposer_right_pos_ids**: in case of issue_exec_type is COLLECTIVE_EXECUTION, holder of position in this list can create proposal to issue badge,
+- **issue_approval_type**: SOLE_APPROVAL - approver can approve and execute code right a way or APPROVAL_CONSENSUS - voter vote for proposal, if majority of voter voted, proposal can be executed,
+- **issue_approver_right_accounts**: in case of issue_approval_type is SOLE_APPROVAL, account in this list can approve issue badge proposal,
+- **issue_approver_right_pos_ids**: in case of issue_approval_type is SOLE_APPROVAL, holder of position in this list can approve issue badge proposal,
+- **issue_voter_right_accounts**: in case of issue_approval_type is APPROVAL_CONSENSUS, account in this list can approve issue badge proposal,
+- **issue_voter_right_pos_ids**: in case of issue_approval_type is APPROVAL_CONSENSUS, account in this list can approve issue badge proposal,
+- **issue_pass_rule**: perent of voted for proposal to be pass,
+- **issue_vote_duration**: duration to vote for proposal
+
+---
+
+```c++
+ACTION configbadge(
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        name update_badge_proposal_name,
+        uint8_t issue_exec_type,
+        vector<name> issue_sole_right_accounts,
+        vector<uint64_t> issue_sole_right_pos_ids,
+        vector<name> issue_proposer_right_accounts,
+        vector<uint64_t> issue_proposer_right_pos_ids,
+        uint8_t issue_approval_type,
+        vector<name> issue_approver_right_accounts,
+        vector<uint64_t> issue_approver_right_pos_ids,
+        vector<name> issue_voter_right_accounts,
+        vector<uint64_t> issue_voter_right_pos_ids,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration
+    );
+```
+- **community_account**: community account name,
+- **badge_id**: id of updating badge,
+- **issue_type**: badge issue type, refer to [document](https://docs.google.com/document/edit?hgd=1&id=1ZRQLixZ1_r-8xgYnkyWP0WfHBbSpcIKbOJ6RYg6XMXc#)
+- **update_badge_proposal_name**: multisig proposal name to update badge,
+- **issue_exec_type**: SOLE_EXECUTION or COLLECTIVE_EXECUTION, execution type of issue badge code of this badge,
+- **issue_sole_right_accounts**: in case of issue_exec_type is SOLE_EXECUTION, account in this list can exectute issue badge code right a way.
+- **issue_sole_right_pos_ids**: in case of issue_exec_type is SOLE_EXECUTION, holder of position in this list can exectute issue badge code right a way.,
+- **issue_proposer_right_accounts**: in case of issue_exec_type is COLLECTIVE_EXECUTION, account in this list can create proposal to issue badge
+- **issue_proposer_right_pos_ids**: in case of issue_exec_type is COLLECTIVE_EXECUTION, holder of position in this list can create proposal to issue badge,
+- **issue_approval_type**: SOLE_APPROVAL - approver can approve and execute code right a way or APPROVAL_CONSENSUS - voter vote for proposal, if majority of voter voted, proposal can be executed,
+- **issue_approver_right_accounts**: in case of issue_approval_type is SOLE_APPROVAL, account in this list can approve issue badge proposal,
+- **issue_approver_right_pos_ids**: in case of issue_approval_type is SOLE_APPROVAL, holder of position in this list can approve issue badge proposal,
+- **issue_voter_right_accounts**: in case of issue_approval_type is APPROVAL_CONSENSUS, account in this list can approve issue badge proposal,
+- **issue_voter_right_pos_ids**: in case of issue_approval_type is APPROVAL_CONSENSUS, account in this list can approve issue badge proposal,
+- **issue_pass_rule**: perent of voted for proposal to be pass,
+- **issue_vote_duration**: duration to vote for proposal
+
+---
 
 ```c++
 ACTION issuebadge(name community_account, name badge_propose_name);
 ```
+
+- **community_account**: community account name,
+- **badge_propose_name**: multisig proposal name to issue badge,
 -------
 ## Prerequisites
 
