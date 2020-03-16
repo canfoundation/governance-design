@@ -3,25 +3,16 @@
 
 CMakeFiles/community.wasm.dir/badge.cpp.o
  /Users/vohongquy/can_project/governance-design/community/include/badge.hpp
- /Users/vohongquy/can_project/governance-design/community/include/code.hpp
- /Users/vohongquy/can_project/governance-design/community/include/constant.hpp
- /Users/vohongquy/can_project/governance-design/community/include/position.hpp
  /Users/vohongquy/can_project/governance-design/community/src/badge.cpp
 CMakeFiles/community.wasm.dir/code.cpp.o
  /Users/vohongquy/can_project/governance-design/community/include/code.hpp
  /Users/vohongquy/can_project/governance-design/community/include/constant.hpp
  /Users/vohongquy/can_project/governance-design/community/src/code.cpp
 CMakeFiles/community.wasm.dir/community.cpp.o
- /Users/vohongquy/can_project/governance-design/community/include/badge.hpp
- /Users/vohongquy/can_project/governance-design/community/include/code.hpp
  /Users/vohongquy/can_project/governance-design/community/include/community.hpp
- /Users/vohongquy/can_project/governance-design/community/include/constant.hpp
  /Users/vohongquy/can_project/governance-design/community/include/exchange_state.hpp
- /Users/vohongquy/can_project/governance-design/community/include/position.hpp
  /Users/vohongquy/can_project/governance-design/community/src/community.cpp
  /Users/vohongquy/can_project/governance-design/community/src/exchange_state.cpp
 CMakeFiles/community.wasm.dir/position.cpp.o
- /Users/vohongquy/can_project/governance-design/community/include/code.hpp
- /Users/vohongquy/can_project/governance-design/community/include/constant.hpp
  /Users/vohongquy/can_project/governance-design/community/include/position.hpp
  /Users/vohongquy/can_project/governance-design/community/src/position.cpp

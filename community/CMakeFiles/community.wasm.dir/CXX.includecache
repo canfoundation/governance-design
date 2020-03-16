@@ -7,8 +7,6 @@
 #IncludeRegexTransform: 
 
 /Users/vohongquy/can_project/governance-design/community/include/badge.hpp
-position.hpp
-/Users/vohongquy/can_project/governance-design/community/include/position.hpp
 
 /Users/vohongquy/can_project/governance-design/community/include/code.hpp
 eosio/eosio.hpp
@@ -39,8 +37,6 @@ eosio/crypto.hpp
 -
 math.h
 -
-badge.hpp
-/Users/vohongquy/can_project/governance-design/community/include/badge.hpp
 
 /Users/vohongquy/can_project/governance-design/community/include/constant.hpp
 
@@ -51,8 +47,6 @@ eosio/multi_index.hpp
 -
 
 /Users/vohongquy/can_project/governance-design/community/include/position.hpp
-code.hpp
-/Users/vohongquy/can_project/governance-design/community/include/code.hpp
 
 /Users/vohongquy/can_project/governance-design/community/src/badge.cpp
 ../include/badge.hpp
