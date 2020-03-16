@@ -59,12 +59,42 @@ ACTION create(
    - **community_account** community account
    - **creator** who was created the community
    - **create_default_code**  option to add default code: `co.access`, `po.create`, `ba.create`, `ba.issue`
+
+---
+
+## community::RightHolder type
+
+```c++
+    struct RightHolder
+    {
+        bool is_anyone = false;
+        bool is_any_community_member = false;
+        vector<uint64_t> required_badges;
+        vector<uint64_t> required_positions;
+        vector<asset> required_tokens;
+        uint64_t required_exp;
+        vector<name> accounts;
+    };
+```
+
+### Description:
+- Requirement for who can access CiF execute, propose code, nominate, vote for code and position...
+
+### Parameters:
+   - **is_anyone** any one have right
+   - **is_any_community_member** any members of community have right
+   - **required_badges** who have one of these badge will have right
+   - **required_positions** who is the holder of one of these position will have right
+   - **required_tokens** who amount of one token in these list greater than requirement will have right
+   - **required_exp** who have enough experience will have right
+   - **accounts** account in this list will have right
+
 ---
 
 ## community::setaccess set who can access community
 
 ```c++
-    ACTION setaccess(name community_account, bool is_anyone, bool is_any_community_member, vector<name> right_accounts, vector<uint64_t> right_badge_ids, vector<uint64_t> right_pos_ids);
+    ACTION setaccess(name community_account, RightHolder right_access);
 ```
 
 ### Description:
@@ -73,11 +103,7 @@ ACTION create(
 
 ### Parameters:
    - **community_account** community account
-   - **is_anyone** is any one can access community
-   - **is_any_community_member**  is any community member can access community
-   - **right_accounts**  list of account can access community
-   - **right_badge_ids**  list of badge ids can access community
-   - **right_pos_ids**  list of position ids can access community
+   - **right_access** Right holder requirement for who can access CiF
 ---
 
 ## community::create new code
@@ -128,12 +154,11 @@ ACTION setexectype(
 
 ```c++
 ACTION setsoleexec(
-        name community_account, 
-        uint64_t code_id, 
-        bool is_amend_code,
-        vector<name> right_accounts,
-        vector<uint64_t> right_pos_ids
-    );
+  name community_account,
+  uint64_t code_id,
+  bool is_amend_code,
+  RightHolder right_sole_executor
+);
 ```
 
 ### Description:
@@ -143,8 +168,7 @@ ACTION setsoleexec(
 ### Parameters:
    - **community_account** community account
    - **code_id** name of the code
-   - **right_accounts** the account right holder
-   - **right_pos_ids** the position ids right holder
+   - **right_sole_executor** Right holder for sole decision
    - **is_amend_code** is this action set for amend code
 ---
 
@@ -152,12 +176,11 @@ ACTION setsoleexec(
 
 ```c++
 ACTION setproposer(
-        name community_account,
-        uint64_t code_id,
-        bool is_amend_code,
-        vector<name> right_accounts,
-        vector<uint64_t> right_pos_id
-    );
+  name community_account,
+  uint64_t code_id,
+  bool is_amend_code,
+  RightHolder right_proposer
+  );
 ```
 
 ### Description:
@@ -166,8 +189,7 @@ ACTION setproposer(
 ### Parameters:
    - **community_account** community account
    - **code_id** name of the code
-   - **right_accounts** the account right holder
-   - **right_pos_ids** the position ids right holder
+   - **right_proposer** Right Holder for who can propose code
    - **is_amend_code** is this action set for amend code
 ---
 
@@ -197,12 +219,11 @@ ACTION setapprotype(
 
 ```c++
 ACTION setapprover(
-        name community_account,
-        uint64_t code_id,
-        bool is_amend_code,
-        vector<name> right_accounts,
-        vector<uint64_t> right_pos_ids
-    );
+  name community_account,
+  uint64_t code_id,
+  bool is_amend_code,
+  RightHolder right_approver
+);
 ```
 
 ### Description:
@@ -212,21 +233,19 @@ ACTION setapprover(
 ### Parameters:
    - **community_account** community account
    - **code_id** name of the code
-   - **right_accounts** the account right holder
-   - **right_pos_ids** the position ids right holder
+   - **right_approver** Right Holder for who can approve proposal
    - **is_amend_code** is this action set for amend code
 ---
 
 ## community::set requirement for the one who can create approve for proposal
 
 ```c++
-ACTION setapprover(
-        name community_account,
-        uint64_t code_id,
-        bool is_amend_code,
-        vector<name> right_accounts,
-        vector<uint64_t> right_pos_ids
-    );
+ACTION setvoter(
+  name community_account,
+  uint64_t code_id,
+  bool is_amend_code,
+  RightHolder right_voter
+);
 ```
 
 ### Description:
@@ -236,8 +255,7 @@ ACTION setapprover(
 ### Parameters:
    - **community_account** community account
    - **code_id** name of the code
-   - **right_accounts** the account right holder
-   - **right_pos_ids** the position ids right holder
+   - **right_voter** Right Holder for the one who can vote for proposal
    - **is_amend_code** is this action set for amend code
 ---
 
@@ -350,10 +368,22 @@ ACTION voteforcode(name community_account, name proposal_name, name approver, bo
 ## community::createpos create new position
 
 ```c++
-ACTION community::createpos(name community_account, name creator, string pos_name, uint64_t max_holder, uint8_t filled_through)
+ACTION createpos(
+        name community_account,
+        name creator,
+        string pos_name,
+        uint64_t max_holder,
+        uint8_t filled_through,
+        uint64_t term,
+        uint64_t next_term_start_at,
+        uint64_t voting_period,
+        RightHolder right_candidate,
+        RightHolder right_voter
+    );
 ```
 
 ### Description:
+   - create new position
 
 ### Parameters:
    - **community_account** community account
@@ -361,26 +391,53 @@ ACTION community::createpos(name community_account, name creator, string pos_nam
    - **pos_name** position's name
    - **max_holder** the maximum holder for position
    - **filled_through** how to fill the holder for this position, 0 APOINTMENT, 1 ELECTION
+   - **term** term of position
+   - **next_term_start_at** start time of next term
+   - **voting_period** voting period
+   - **right_candidate** Right Holder for the one who can nominate for position
+   - **right_voter** Right Holder for the one who can vote for candidate
 
+```bash
+        position_created_time      voting_start_day          voting_end_date          next_term_start_at
+                |---------------------->|-------------------------->|------------------------>|
+                |                       |                           |                         |
+                |                       |<---- vote_duration  ----->|<-------- 1 day -------->|
+                |                       |                           |                         |
+                |<---------------- nomination duration ------------>|                         |
+
+```
 ---
 
 ## community::configpos 
 
 ```c++
 ACTION configpos(
-  name community_account, 
-  uint64_t pos_id, 
-  string pos_name, 
-  uint64_t max_holder, 
-  uint8_t filled_through, 
-  uint64_t term, 
-  uint64_t next_term_start_at, 
-  uint64_t voting_period, 
-  double pass_rule, vector<name> pos_candidate_accounts, 
-  vector<name> pos_voter_accounts, 
-  vector<uint64_t> pos_candidate_positions, 
-  vector<uint64_t> pos_voter_positions);
+        name community_account,
+        uint64_t pos_id,
+        string pos_name,
+        uint64_t max_holder,
+        uint8_t filled_through,
+        uint64_t term,
+        uint64_t next_term_start_at,
+        uint64_t voting_period,
+        RightHolder right_candidate,
+        RightHolder right_voter
+    )
 ```
+
+### Description:
+   - configure for position
+
+### Parameters:
+   - **community_account** community account
+   - **pos_name** position's name
+   - **max_holder** the maximum holder for position
+   - **filled_through** how to fill the holder for this position, 0 APOINTMENT, 1 ELECTION
+   - **term** term of position
+   - **next_term_start_at** start time of next term
+   - **voting_period** voting period
+   - **right_candidate** Right Holder for the one who can nominate for position
+   - **right_voter** Right Holder for the one who can vote for candidate
 ---
 
 ## community::appointpos 
@@ -461,33 +518,25 @@ ACTION createbadge(
         uint8_t issue_type,
         name badge_propose_name,
         uint8_t issue_exec_type,
-        vector<name> issue_sole_right_accounts,
-        vector<uint64_t> issue_sole_right_pos_ids,
-        vector<name> issue_proposer_right_accounts,
-        vector<uint64_t> issue_proposer_right_pos_ids,
+        RightHolder right_issue_sole_executor,
+        RightHolder right_issue_proposer,
         uint8_t issue_approval_type,
-        vector<name> issue_approver_right_accounts,
-        vector<uint64_t> issue_approver_right_pos_ids,
-        vector<name> issue_voter_right_accounts,
-        vector<uint64_t> issue_voter_right_pos_ids,
+        RightHolder right_issue_approver,
+        RightHolder right_issue_voter,
         double issue_pass_rule,
         uint64_t issue_vote_duration
-);
+    );
 ```
 - **community_account**: community account name,
 - **badge_id**: id of badge,
 - **issue_type**: badge issue type, refer to [document](https://docs.google.com/document/edit?hgd=1&id=1ZRQLixZ1_r-8xgYnkyWP0WfHBbSpcIKbOJ6RYg6XMXc#)
 - **badge_propose_name**: multisig proposal name to create badge,
 - **issue_exec_type**: SOLE_EXECUTION or COLLECTIVE_EXECUTION, execution type of issue badge code of this badge,
-- **issue_sole_right_accounts**: in case of issue_exec_type is SOLE_EXECUTION, account in this list can exectute issue badge code right a way.
-- **issue_sole_right_pos_ids**: in case of issue_exec_type is SOLE_EXECUTION, holder of position in this list can exectute issue badge code right a way.,
-- **issue_proposer_right_accounts**: in case of issue_exec_type is COLLECTIVE_EXECUTION, account in this list can create proposal to issue badge
-- **issue_proposer_right_pos_ids**: in case of issue_exec_type is COLLECTIVE_EXECUTION, holder of position in this list can create proposal to issue badge,
+- **right_issue_sole_executor**: in case of issue_exec_type is SOLE_EXECUTION, Right Holder for sole decision of issue code
+- **right_issue_proposer**: in case of issue_exec_type is COLLECTIVE_EXECUTION, Right Holder for who can propose issue badge
 - **issue_approval_type**: SOLE_APPROVAL - approver can approve and execute code right a way or APPROVAL_CONSENSUS - voter vote for proposal, if majority of voter voted, proposal can be executed,
-- **issue_approver_right_accounts**: in case of issue_approval_type is SOLE_APPROVAL, account in this list can approve issue badge proposal,
-- **issue_approver_right_pos_ids**: in case of issue_approval_type is SOLE_APPROVAL, holder of position in this list can approve issue badge proposal,
-- **issue_voter_right_accounts**: in case of issue_approval_type is APPROVAL_CONSENSUS, account in this list can approve issue badge proposal,
-- **issue_voter_right_pos_ids**: in case of issue_approval_type is APPROVAL_CONSENSUS, account in this list can approve issue badge proposal,
+- **right_issue_approver**: in case of issue_approval_type is SOLE_APPROVAL, Right Holder for who can approve issue badge proposal
+- **right_issue_voter**: in case of issue_approval_type is APPROVAL_CONSENSUS, Right Holder for who can vote for issue badge proposal
 - **issue_pass_rule**: perent of voted for proposal to be pass,
 - **issue_vote_duration**: duration to vote for proposal
 
@@ -502,33 +551,25 @@ ACTION configbadge(
         uint8_t issue_type,
         name update_badge_proposal_name,
         uint8_t issue_exec_type,
-        vector<name> issue_sole_right_accounts,
-        vector<uint64_t> issue_sole_right_pos_ids,
-        vector<name> issue_proposer_right_accounts,
-        vector<uint64_t> issue_proposer_right_pos_ids,
+        RightHolder right_issue_sole_executor,
+        RightHolder right_issue_proposer,
         uint8_t issue_approval_type,
-        vector<name> issue_approver_right_accounts,
-        vector<uint64_t> issue_approver_right_pos_ids,
-        vector<name> issue_voter_right_accounts,
-        vector<uint64_t> issue_voter_right_pos_ids,
+        RightHolder right_issue_approver,
+        RightHolder right_issue_voter,
         double issue_pass_rule,
         uint64_t issue_vote_duration
     );
 ```
 - **community_account**: community account name,
-- **badge_id**: id of updating badge,
+- **badge_id**: id of badge,
 - **issue_type**: badge issue type, refer to [document](https://docs.google.com/document/edit?hgd=1&id=1ZRQLixZ1_r-8xgYnkyWP0WfHBbSpcIKbOJ6RYg6XMXc#)
 - **update_badge_proposal_name**: multisig proposal name to update badge,
 - **issue_exec_type**: SOLE_EXECUTION or COLLECTIVE_EXECUTION, execution type of issue badge code of this badge,
-- **issue_sole_right_accounts**: in case of issue_exec_type is SOLE_EXECUTION, account in this list can exectute issue badge code right a way.
-- **issue_sole_right_pos_ids**: in case of issue_exec_type is SOLE_EXECUTION, holder of position in this list can exectute issue badge code right a way.,
-- **issue_proposer_right_accounts**: in case of issue_exec_type is COLLECTIVE_EXECUTION, account in this list can create proposal to issue badge
-- **issue_proposer_right_pos_ids**: in case of issue_exec_type is COLLECTIVE_EXECUTION, holder of position in this list can create proposal to issue badge,
+- **right_issue_sole_executor**: in case of issue_exec_type is SOLE_EXECUTION, Right Holder for sole decision of issue code
+- **right_issue_proposer**: in case of issue_exec_type is COLLECTIVE_EXECUTION, Right Holder for who can propose issue badge
 - **issue_approval_type**: SOLE_APPROVAL - approver can approve and execute code right a way or APPROVAL_CONSENSUS - voter vote for proposal, if majority of voter voted, proposal can be executed,
-- **issue_approver_right_accounts**: in case of issue_approval_type is SOLE_APPROVAL, account in this list can approve issue badge proposal,
-- **issue_approver_right_pos_ids**: in case of issue_approval_type is SOLE_APPROVAL, holder of position in this list can approve issue badge proposal,
-- **issue_voter_right_accounts**: in case of issue_approval_type is APPROVAL_CONSENSUS, account in this list can approve issue badge proposal,
-- **issue_voter_right_pos_ids**: in case of issue_approval_type is APPROVAL_CONSENSUS, account in this list can approve issue badge proposal,
+- **right_issue_approver**: in case of issue_approval_type is SOLE_APPROVAL, Right Holder for who can approve issue badge proposal
+- **right_issue_voter**: in case of issue_approval_type is APPROVAL_CONSENSUS, Right Holder for who can vote for issue badge proposal
 - **issue_pass_rule**: perent of voted for proposal to be pass,
 - **issue_vote_duration**: duration to vote for proposal
 
@@ -729,11 +770,12 @@ $ cleos get table governance23 community241 codeexecrule
 ### set who can access community
 1. pack action data of `setaccess` action
 ```bash
-cleos convert pack_action_data governance24 setaccess '["community314", 1, 1, ["quyvo", "daniel"], [1, 2], [99, 123]]'
+cleos convert pack_action_data governance setaccess '["community111", [0, 0, [], [], [], 0, ["sally", "chen", "corona"]]]'                                                
+1042f0d94d2d2545000000000000000000000000000300000000001fa3c100000000003055430000000098492f45
 ```
 2. get id of `co.access` code
 ```bash
-cleos get table governance24 community314 codes --index 2 --key-type i64 -L co.access -U co.access
+cleos get table governance community111 codes --index 2 --key-type i64 -L co.access -U co.access
 {
   "rows": [{
       "code_id": 2,
@@ -756,7 +798,7 @@ cleos get table governance24 community314 codes --index 2 --key-type i64 -L co.a
 
 3. execute `setaccess` action of `co.access` code:
 ```bash
-cleos push action governance24 execcode '["community314", "quocleplayer", 2, [["setaccess", "40c2f0d94d2d25450101020000000000babdb60000000044e5a64902010000000000000002000000000000000263000000000000007b00000000000000"]]]' -p quocleplayer
+cleos push action governance execcode '["community111", "sally", 2, [["setaccess", "1042f0d94d2d2545000000000000000000000000000300000000001fa3c100000000003055430000000098492f45"]]]' -p quocleplayer
 ```
 
 4. get table `accession` to verify
@@ -765,26 +807,22 @@ cleos get table governance24 community314 accession                             
 {
   "rows": [{
       "right_access": {
-        "is_anyone": 1,
-        "is_any_community_member": 1,
-        "required_badges": [
-          1,
-          2
-        ],
-        "required_positions": [
-          99,
-          123
-        ],
+        "is_anyone": 0,
+        "is_any_community_member": 0,
+        "required_badges": [],
+        "required_positions": [],
         "required_tokens": [],
         "required_exp": 0,
         "accounts": [
-          "quyvo",
-          "daniel"
+          "sally",
+          "chen",
+          "corona"
         ]
       }
     }
   ],
-  "more": false
+  "more": false,
+  "next_key": ""
 }
 ```
 
@@ -801,47 +839,47 @@ cleos get table governance24 community314 accession                             
 
 ```bash
 // last parameter is identify set for amendment code (1 is set for amendment code, 0 is set for code)
-$ cleos convert pack_action_data governance23 setexectype '["community241", 2, 1, 0]'
-208af0d94d2d254529000000000000000000
+$ cleos convert pack_action_data governance setexectype '["community111", 2, 1, 0]'
+1042f0d94d2d254502000000000000000100
 ```
 
 2. pack `setapprotype` action data to set approval type of code proposal (approval type 1 is approval consensus):
 ```bash
-$ cleos convert pack_action_data governance23 setapprotype '["community241", 2, 0, 1]'
-108af0d94d2d254504000000000000000001
+$ cleos convert pack_action_data governance setapprotype '["community111", 2, 0, 1]'
+1042f0d94d2d254502000000000000000001
 ```
 
 3. pack setproposer action data to set proposer right holder of `co.access` with code_id 3:
 
 ```bash
-$ cleos convert pack_action_data governance23 setproposer '["community241", 2, 0, ["quyvoplayers"], []]'
-108af0d94d2d25450400000000000000000180aff22656babdb600
+$ cleos convert pack_action_data governance setproposer '["community111", 2, 0, [0, 0, [], [], [], 0, ["chen"]]]'
+1042f0d94d2d254502000000000000000000000000000000000000000000010000000000305543
 ```
 
 4. pack action data `setvoter` to set voter of proposal:
 
 ```bash
-cleos convert pack_action_data governance23 setvoter '["community241", 2, 0, ["quyvoplayers"], []]'
-108af0d94d2d25450400000000000000000180aff22656babdb600
+cleos convert pack_action_data governance setvoter '["community111", 2, 0, [0, 0, [], [], [], 0, ["corona"]]]'
+1042f0d94d2d254502000000000000000000000000000000000000000000010000000098492f45
 ```
 
 5. pack action data `setvoterule` to set vote rule of proposal:
 ```bash
-cleos convert pack_action_data governance23 setvoterule '["community241", 2, 0, 60, 600]'
-108af0d94d2d25450400000000000000000000000000004e405802000000000000
+cleos convert pack_action_data governance setvoterule '["community111", 2, 0, 60, 600]'
+1042f0d94d2d25450200000000000000000000000000004e405802000000000000
 ```
 
 6. use action `execcode` to execute above action, amend execution type is the special case, even `setexectype`, `setproposer`, `setvoter`, `setvoterule` action is not exist in the code, but `execcode` action with automatically know it is use for changing the execiton type:
 
 ```bash
-cleos push action governance23 execcode '["community241", "quocleplayer", 2, [["setexectype", "108af0d94d2d254504000000000000000100"], ["setapprotype", "108af0d94d2d254504000000000000000001"], ["setproposer", "108af0d94d2d25450400000000000000000180aff22656babdb600"], ["setvoter", "108af0d94d2d25450400000000000000000180aff22656babdb600"], ["setvoterule", "108af0d94d2d25450400000000000000000000000000004e405802000000000000"]]]' -p quocleplayer
+cleos push action governance execcode '["community111", "sally", 2, [["setexectype", "1042f0d94d2d254502000000000000000100"], ["setapprotype", "1042f0d94d2d254502000000000000000001"], ["setproposer", "1042f0d94d2d254502000000000000000000000000000000000000000000010000000000305543"], ["setvoter", "1042f0d94d2d254502000000000000000000000000000000000000000000010000000098492f45"], ["setvoterule", "1042f0d94d2d25450200000000000000000000000000004e405802000000000000"]]]' -p sally
 ```
 
 
 7. get code and codevoterule table to check:
 
 ```bash
-$ cleos get table governance23 community241 codes
+$ cleos get table governance community111 codes
 {
       "code_id": 2,
       "code_name": "co.access",
@@ -856,7 +894,7 @@ $ cleos get table governance23 community241 codes
         "refer_id": 0
 }
 
-$ cleos get table governance23 community241 codevoterule
+$ cleos get table governance community111 codevoterule
 {
   "rows": [{
       "code_id": 3,
@@ -906,46 +944,46 @@ $ cleos get table governance23 community241 codevoterule
 
 ```bash
 // last parameter is identify set for amendment code (1 is set for amendment code, 0 is set for code)
-$ cleos convert pack_action_data governance23 setexectype '["community241", 2, 1, 1]'
-108af0d94d2d254504000000000000000101
+$ cleos convert pack_action_data governance setexectype '["community111", 2, 1, 1]'
+1042f0d94d2d254502000000000000000101
 ```
 
 2. pack `setapprotype` action data to set approval type of code proposal (approval type 1 is approval consensus):
 ```bash
-$ cleos convert pack_action_data governance23 setapprotype '["community241", 2, 1, 1]'
-108af0d94d2d254504000000000000000101
+$ cleos convert pack_action_data governance setapprotype '["community111", 2, 1, 1]'
+1042f0d94d2d254502000000000000000101
 ```
 
 3. pack setproposer action data to set proposer right holder of `co.access` with code_id 3:
 
 ```bash
-$ cleos convert pack_action_data governance23 setproposer '["community241", 2, 1, ["quyvoplayers"], []]'
-108af0d94d2d25450400000000000000010180aff22656babdb600
+$ cleos convert pack_action_data governance setproposer '["community111", 2, 1, [0, 0, [], [], [], 0, ["chen"]]]'
+1042f0d94d2d254502000000000000000100000000000000000000000000010000000000305543
 ```
 
 4. pack action data `setvoter` to set voter of proposal:
 
 ```bash
-cleos convert pack_action_data governance23 setvoter '["community241", 2, 1, ["quyvoplayers"], []]'
-108af0d94d2d25450400000000000000010180aff22656babdb600
+cleos convert pack_action_data governance setvoter '["community111", 2, 1, [0, 0, [], [], [], 0, ["corona"]]]'
+1042f0d94d2d254502000000000000000100000000000000000000000000010000000098492f45
 ```
 
 5. pack action data `setvoterule` to set vote rule of proposal:
 ```bash
-cleos convert pack_action_data governance23 setvoterule '["community241", 2, 1, 60, 600]'
-108af0d94d2d25450400000000000000010000000000004e405802000000000000
+cleos convert pack_action_data governance setvoterule '["community111", 2, 1, 60, 600]'
+1042f0d94d2d25450200000000000000010000000000004e405802000000000000
 ```
 
 6. use action `execcode` to execute above action, amend execution type is the special case, even `setexectype`, `setproposer`, `setvoter`, `setvoterule` action is not exist in the code, but `execcode` action with automatically know it is use for changing the execiton type:
 
 ```bash
-cleos push action governance23 execcode '["community241", "quocleplayer", 2, [["setapprotype", "108af0d94d2d254504000000000000000101"], ["setproposer", "108af0d94d2d25450400000000000000010180aff22656babdb600"], ["setvoter", "108af0d94d2d25450400000000000000010180aff22656babdb600"], ["setvoterule", "108af0d94d2d25450400000000000000010000000000004e405802000000000000"], ["setexectype", "108af0d94d2d254504000000000000000101"]]]' -p quocleplayer
+cleos push action governance execcode '["community111", "sally", 2, [["setapprotype", "1042f0d94d2d254502000000000000000101"], ["setproposer", "1042f0d94d2d254502000000000000000100000000000000000000000000010000000000305543"], ["setvoter", "1042f0d94d2d254502000000000000000100000000000000000000000000010000000098492f45"], ["setvoterule", "1042f0d94d2d25450200000000000000010000000000004e405802000000000000"], ["setexectype", "1042f0d94d2d254502000000000000000101"]]]' -p quocleplayer
 ```
 
 7. get code and amenvoterule table to check:
 
 ```bash
-$ cleos get table governance23 community241 codes
+$ cleos get table governance community111 codes
 {
       "code_id": 2,
       "code_name": "co.access",
@@ -960,10 +998,10 @@ $ cleos get table governance23 community241 codes
         "refer_id": 0
 }
 
-$ cleos get table governance23 community241 amenvoterule
+$ cleos get table governance community111 amenvoterule
 {
   "rows": [{
-      "code_id": 3,
+      "code_id": 2,
       "vote_duration": 600,
       "pass_rule": "60.00000000000000000",
       "approval_type": 1,
@@ -975,7 +1013,7 @@ $ cleos get table governance23 community241 amenvoterule
         "required_tokens": [],
         "required_exp": 0,
         "accounts": [
-          "quyvoplayers"
+          "chen"
         ]
       },
       "right_approver": {
@@ -995,12 +1033,13 @@ $ cleos get table governance23 community241 amenvoterule
         "required_tokens": [],
         "required_exp": 0,
         "accounts": [
-          "quyvoplayers"
+          "corona"
         ]
       }
     }
   ],
-  "more": false
+  "more": false,
+  "next_key": ""
 }
 ```
 ---
@@ -1009,14 +1048,14 @@ $ cleos get table governance23 community241 amenvoterule
 
 1. pack action data to create new code
 ```bash
-cleos convert pack_action_data governance23 createcode '["community241", "testcode", "governance23", ["testaction"]]'
-2088f0d94d2d25450000002a5194b1ca308442d3ccab36650100c0a42e2393b1ca
+cleos convert pack_action_data governance createcode '["community111", "testcode", "governance", ["testaction"]]'
+1042f0d94d2d25450000002a5194b1ca008042d3ccab36650100c0a42e2393b1ca
 ```
 
 2. find the code id of co.amend code, use secondary index to find code by code name:
 
 ```bash
-cleos get table governance23 community241 codes --index 2 --key-type i64 -L co.amend -U co.amend
+cleos get table governance community111 codes --index 2 --key-type i64 -L co.amend -U co.amend
 {
   "rows": [{
       "code_id": 0,
@@ -1039,12 +1078,12 @@ cleos get table governance23 community241 codes --index 2 --key-type i64 -L co.a
 
 3. execute create code
 ```bash
-cleos push action governance23 execcode '[community241, quocleplayer, 0, [[createcode, "2088f0d94d2d25450000002a5194b1ca308442d3ccab36650100c0a42e2393b1ca"]]]' -p quocleplayer
+cleos push action governance execcode '[community111, sally, 0, [[createcode, "1042f0d94d2d25450000002a5194b1ca008042d3ccab36650100c0a42e2393b1ca"]]]' -p sally
 ```
 
 4. get table to check again:
 ```bash
-cleos get table governance23 community241 codes --index 2 --key-type i64 -L testcode -U testcode
+cleos get table governance community111 codes --index 2 --key-type i64 -L testcode -U testcode
 {
   "rows": [{
       "code_id": 5,
@@ -1071,7 +1110,7 @@ cleos get table governance23 community241 codes --index 2 --key-type i64 -L test
 1. Find creation of Position code, use secondary index, get the code id is 1:
 
 ```bash
-cleos get table governance23 community241 codes --index 2 --key-type i64 -L po.create -U po.create
+cleos get table governance community111 codes --index 2 --key-type i64 -L po.create -U po.create
 {
   "rows": [{
       "code_id": 1,
@@ -1094,15 +1133,15 @@ cleos get table governance23 community241 codes --index 2 --key-type i64 -L po.c
 
 2. Pack above action data, `Appointment` filling type coresspond to number 0:
 ```bash
-cleos convert pack_action_data governance23 createpos '["community241", "quocleplayer", "Badge Manager", 3, 0]' 
-2088f0d94d2d2545709537b1aa88a8b60d4261646765204d616e61676572030000000000000000
+cleos convert pack_action_data governance createpos '["community111", "sally", "Badge Manager", 3, 1, 9000, 1584513948, 500, [0, 0, [], [], [], 0, ["chen", "corona"]], [0, 0, [], [], [], 0, ["daniel", "sally"]]]' 
+1042f0d94d2d254500000000001fa3c10d4261646765204d616e6167657203000000000000000128230000000000009cc3715e00000000f401000000000000000000000000000000000000000200000000003055430000000098492f4500000000000000000000000000020000000044e5a64900000000001fa3c1
 ```
 
 3. Because the code is `Collective decision` type we need to use `proposecode` to create proposal ( in case of `sole decision` we can call `execcode` to execute it directly), the proposal need to pay the ram for this proposal:
 
 create proposal:
 ```bash
-cleos push action governance23 proposecode '["community241", "quocleplayer", "newpos", 1, [["createpos", "2088f0d94d2d2545709537b1aa88a8b60d4261646765204d616e61676572030000000000000000"]]]' -p quocleplayer
+cleos push action governance proposecode '["community111", "sally", "newpos", 1, [["createpos", "1042f0d94d2d254500000000001fa3c10d4261646765204d616e6167657203000000000000000128230000000000009cc3715e00000000f401000000000000000000000000000000000000000200000000003055430000000098492f4500000000000000000000000000020000000044e5a64900000000001fa3c1"]]]' -p quocleplayer
 ```
 
 4. Voter vote for proposal
@@ -1110,7 +1149,7 @@ cleos push action governance23 proposecode '["community241", "quocleplayer", "ne
 To get all proposals of community:
 
 ```bash
-cleos get table governance23 community241 coproposals
+cleos get table governance community111 coproposals
 {
   "rows": [{
       "proposal_name": "newpos",
@@ -1132,10 +1171,10 @@ cleos get table governance23 community241 coproposals
 User `voteforcode` action to vote for code proposal
 ```bash
 // quocleplayer agree proposal
-cleos push action governance23 voteforcode '["community241", "newpos", quocleplayer, 1]' -p quocleplayer
+cleos push action governance voteforcode '["community111", "newpos", quocleplayer, 1]' -p quocleplayer
 
 // creator.can agree proposal
-cleos push action governance23 voteforcode '["community241", "newpos", creator.can, 1]' -p creator.can
+cleos push action governance voteforcode '["community111", "newpos", creator.can, 1]' -p creator.can
 ```
 
 5. After voting has been finished, call execproposal action to execute proposal:
@@ -1143,7 +1182,7 @@ cleos push action governance23 voteforcode '["community241", "newpos", creator.c
 To get all proposals of community:
 
 ```bash
-cleos get table governance23 community241 coproposals
+cleos get table governance community111 coproposals
 {
   "rows": [{
       "proposal_name": "newpos",
@@ -1171,7 +1210,7 @@ cleos get table governance23 community241 coproposals
 
 To execute proposal
 ```bash
-cleos push action governance23 execproposal '[community241, newpos]' -p quocleplayer
+cleos push action governance execproposal '[community111, newpos]' -p sally
 ```
 
 6. Get position table to check:
@@ -1179,7 +1218,7 @@ cleos push action governance23 execproposal '[community241, newpos]' -p quoclepl
 Three corresponding code of positions have been created. `po.appoint` with code id 7, `po.config` with code id 7, `po.dismiss` with code id 6 and `po.dissmiss` with code id 8.
 
 ```bash
-cleos get table governance23 community241 positions
+cleos get table governance community111 positions
 {
   "rows": [{
       "pos_id": 0,
@@ -1203,7 +1242,7 @@ cleos get table governance23 community241 positions
   "more": false
 }
 
-cleos get table governance23 community233 codes -L 6 -U 8
+cleos get table governance community111 codes -L 6 -U 8
 {
   "rows": [{
       "code_id": 6,
