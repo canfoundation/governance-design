@@ -141,8 +141,11 @@ ACTION community::create(name creator, name community_account, string &community
         row.description = description;
     });
 
+    vector<name> accession_account;
+    accession_account.push_back(creator);
     accession default_accession;
     default_accession.right_access.is_any_community_member = true;
+    default_accession.right_access.accounts = accession_account;
     accession_table _accession(_self, community_account.value);
     _accession.set(default_accession, creator);
 
@@ -158,8 +161,16 @@ ACTION community::create(name creator, name community_account, string &community
 ACTION community::setaccess(name community_account, bool is_anyone, bool is_any_community_member, vector<name> right_accounts, vector<uint64_t> right_badge_ids, vector<uint64_t> right_pos_ids)
 {
     require_auth(community_account);
+
+    auto com_itr = _communitys.find(community_account.value);
+    check(com_itr != _communitys.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
     
     accession default_accession;
+    auto it = std::find(right_accounts.begin(), right_accounts.end(), com_itr->creator);
+    if (it == right_accounts.end()) {
+        right_accounts.push_back(com_itr->creator);
+    }
+
     default_accession.right_access.is_anyone = is_anyone;
     default_accession.right_access.is_any_community_member = is_any_community_member;
     default_accession.right_access.accounts = right_accounts;
@@ -368,7 +379,7 @@ ACTION community::proposecode(name community_account, name proposer, name propos
         if (!is_amend_action(execution_data.code_action))
         {
             check(std::find(code_itr->code_actions.begin(), code_itr->code_actions.end(), execution_data.code_action) != code_itr->code_actions.end(), "ERR::VERIFY_FAILED::Action doesn't exist.");
-            check(code_itr->code_exec_type == ExecutionType::COLLECTIVE_DECISION, "ERR::INVALID_EXEC_TYPE::Can not create proposal for sole decision code");
+            check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::INVALID_EXEC_TYPE::Can not create proposal for sole decision code");
             // Verify Right Holder
              action(
                 permission_level{get_self(), "active"_n},
@@ -385,7 +396,7 @@ ACTION community::proposecode(name community_account, name proposer, name propos
         }
         else
         {
-            check(code_itr->amendment_exec_type == ExecutionType::COLLECTIVE_DECISION, "ERR::INVALID_EXEC_TYPE::Can not create proposal for sole decision code");
+            check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::INVALID_EXEC_TYPE::Can not create proposal for sole decision code");
             // Verify Right Holder
             action(
                 permission_level{get_self(), "active"_n},
@@ -1440,8 +1451,9 @@ ACTION community::appointpos(name community_account, uint64_t pos_id, vector<nam
     auto pos_itr = _positions.find(pos_id);
     check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::Position id doesn't exist.");
     check(pos_itr->fulfillment_type == FillingType::APPOINTMENT, "ERR::FAILED_FILLING_TYPE::Only fulfillment equal appoinment need to appoint");
-    check(pos_itr->max_holder >= holder_accounts.size(), "ERR::VERIFY_FAILED::The holder accounts exceed the maximum number.");
+    check(pos_itr->max_holder >= pos_itr->holders.size() + holder_accounts.size(), "ERR::VERIFY_FAILED::The holder accounts exceed the maximum number.");
 
+    holder_accounts.insert(holder_accounts.end(), pos_itr->holders.begin(), pos_itr->holders.end());
     _positions.modify(pos_itr, community_account, [&](auto &row) {
         row.holders = holder_accounts;
     });
@@ -1488,8 +1500,7 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
     check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::Position id doesn't exist.");
     check(pos_itr->fulfillment_type == FillingType::ELECTION, "ERR::FAILED_FILLING_TYPE::Only election postion need to nominate");
 
-    check(is_pos_candidate(community_account, pos_id, candidate), "ERR::VERIFY_FAILED::accounts does not belong position right holder");
-    check(is_pos_voter(community_account, pos_id, voter), "ERR::VERIFY_FAILED::accounts does not belong filling rule right holder");
+    check(is_pos_voter(community_account, pos_id, voter), "ERR::VERIFY_FAILED::accounts does not belong to position right voters");
 
     election_table _electionrule(_self, community_account.value);
     auto election_itr = _electionrule.find(pos_id);
@@ -1498,7 +1509,8 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
     uint64_t votting_start_date = election_itr->next_term_start_at.sec_since_epoch() - seconds_per_day - election_itr->voting_period;
     uint64_t votting_end_date = election_itr->next_term_start_at.sec_since_epoch() - seconds_per_day;
 
-    check(votting_start_date <= current_time_point().sec_since_epoch() && votting_end_date >= current_time_point().sec_since_epoch(), "ERR::START_END_TIME_INVALID::Voting for this position have been expired.");
+    check(votting_end_date >= current_time_point().sec_since_epoch(), "ERR::START_END_TIME_INVALID::Voting for this position have been expired.");
+    check(votting_start_date <= current_time_point().sec_since_epoch(), "ERR::START_END_TIME_INVALID::Voting for this position have not been started yet.");
 
     posproposal_table _posproposal(_self, community_account.value);
     auto posproposal_itr = _posproposal.find(pos_id);
@@ -1989,7 +2001,45 @@ bool community::is_pos_candidate(name community_account, uint64_t pos_id, name o
     check(election_itr != _electionrule.end(), "ERR::ELECTION_RULE_NOT_EXIST::Position need election rules.");
     auto _pos_candidate_holder = election_itr->pos_candidates.accounts;
 
-    return std::find(_pos_candidate_holder.begin(), _pos_candidate_holder.end(), owner) != _pos_candidate_holder.end();
+    bool is_right_account = (_pos_candidate_holder.size() == 0);
+    auto it = std::find(_pos_candidate_holder.begin(), _pos_candidate_holder.end(), owner);
+    if (it != _pos_candidate_holder.end())
+        is_right_account = true;
+
+    if (!is_right_account) return is_right_account;
+
+    auto _position_right_holder_ids = election_itr->pos_candidates.required_positions;
+
+    bool is_right_position = (_position_right_holder_ids.size() == 0);;
+    position_table _positions(_self, community_account.value);
+    for (int i = 0; i < _position_right_holder_ids.size(); i++)
+    {
+        auto position_itr = _positions.find(_position_right_holder_ids[i]);
+        auto _position_holders = position_itr->holders;
+        if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
+        {
+            is_right_position = true;
+            break;
+        }
+    }
+
+    if (!is_right_position) return is_right_position;
+
+    // verify right_holder's badge
+    auto _required_badge_ids = election_itr->pos_candidates.required_badges;
+    bool is_right_badge = (_required_badge_ids.size() == 0);
+    for (int i = 0; i < _required_badge_ids.size(); i++)
+    {
+        ccerts _badges(cryptobadge_contract, owner.value);
+        auto owner_badge_itr = _badges.find(_required_badge_ids[i]);
+        if (owner_badge_itr != _badges.end())
+        {
+            is_right_badge = true;
+            break;
+        }
+    }
+
+    return is_right_badge;
 }
 
 bool community::is_pos_voter(name community_account, uint64_t pos_id, name owner)
@@ -1999,7 +2049,44 @@ bool community::is_pos_voter(name community_account, uint64_t pos_id, name owner
     check(election_itr != _electionrule.end(), "ERR::ELECTION_RULE_NOT_EXIST::Position need election rules.");
     auto _pos_voter_holder = election_itr->pos_voters.accounts;
 
-    return std::find(_pos_voter_holder.begin(), _pos_voter_holder.end(), owner) != _pos_voter_holder.end();
+    bool is_right_account = (_pos_voter_holder.size() == 0);
+    auto it = std::find(_pos_voter_holder.begin(), _pos_voter_holder.end(), owner);
+    if (it != _pos_voter_holder.end())
+        is_right_account = true;
+
+    if (!is_right_account) return is_right_account;
+
+    auto _position_right_holder_ids = election_itr->pos_voters.required_positions;
+
+    bool is_right_position = (_position_right_holder_ids.size() == 0);
+    position_table _positions(_self, community_account.value);
+    for (int i = 0; i < _position_right_holder_ids.size(); i++)
+    {
+        auto position_itr = _positions.find(_position_right_holder_ids[i]);
+        auto _position_holders = position_itr->holders;
+        if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
+        {
+            is_right_position = true;
+            break;
+        }
+    }
+
+    if (!is_right_position) return is_right_position;
+
+    auto _required_badge_ids = election_itr->pos_voters.required_badges;
+    bool is_right_badge = (_required_badge_ids.size() == 0);
+    for (int i = 0; i < _required_badge_ids.size(); i++)
+    {
+        ccerts _badges(cryptobadge_contract, owner.value);
+        auto owner_badge_itr = _badges.find(_required_badge_ids[i]);
+        if (owner_badge_itr != _badges.end())
+        {
+            is_right_badge = true;
+            break;
+        }
+    }
+
+    return is_right_badge;
 }
 /*
 * Increment, save and return id for a new position.
