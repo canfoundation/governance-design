@@ -262,6 +262,8 @@ private:
 
     bool is_amend_action(name calling_action);
 
+    bool verify_community_account_input(name community_account);
+
     eosio::asset convertbytes2cat(uint32_t bytes);
 
     struct RightHolder
