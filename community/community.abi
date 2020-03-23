@@ -298,40 +298,24 @@
                     "type": "uint8"
                 },
                 {
-                    "name": "issue_sole_right_accounts",
-                    "type": "name[]"
+                    "name": "right_issue_sole_executor",
+                    "type": "RightHolder"
                 },
                 {
-                    "name": "issue_sole_right_pos_ids",
-                    "type": "uint64[]"
-                },
-                {
-                    "name": "issue_proposer_right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "issue_proposer_right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_issue_proposer",
+                    "type": "RightHolder"
                 },
                 {
                     "name": "issue_approval_type",
                     "type": "uint8"
                 },
                 {
-                    "name": "issue_approver_right_accounts",
-                    "type": "name[]"
+                    "name": "right_issue_approver",
+                    "type": "RightHolder"
                 },
                 {
-                    "name": "issue_approver_right_pos_ids",
-                    "type": "uint64[]"
-                },
-                {
-                    "name": "issue_voter_right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "issue_voter_right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_issue_voter",
+                    "type": "RightHolder"
                 },
                 {
                     "name": "issue_pass_rule",
@@ -380,20 +364,12 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "pos_candidate_accounts",
-                    "type": "name[]"
+                    "name": "right_candidate",
+                    "type": "RightHolder"
                 },
                 {
-                    "name": "pos_voter_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "pos_candidate_positions",
-                    "type": "uint64[]"
-                },
-                {
-                    "name": "pos_voter_positions",
-                    "type": "uint64[]"
+                    "name": "right_voter",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -470,40 +446,24 @@
                     "type": "uint8"
                 },
                 {
-                    "name": "issue_sole_right_accounts",
-                    "type": "name[]"
+                    "name": "right_issue_sole_executor",
+                    "type": "RightHolder"
                 },
                 {
-                    "name": "issue_sole_right_pos_ids",
-                    "type": "uint64[]"
-                },
-                {
-                    "name": "issue_proposer_right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "issue_proposer_right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_issue_proposer",
+                    "type": "RightHolder"
                 },
                 {
                     "name": "issue_approval_type",
                     "type": "uint8"
                 },
                 {
-                    "name": "issue_approver_right_accounts",
-                    "type": "name[]"
+                    "name": "right_issue_approver",
+                    "type": "RightHolder"
                 },
                 {
-                    "name": "issue_approver_right_pos_ids",
-                    "type": "uint64[]"
-                },
-                {
-                    "name": "issue_voter_right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "issue_voter_right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_issue_voter",
+                    "type": "RightHolder"
                 },
                 {
                     "name": "issue_pass_rule",
@@ -574,20 +534,12 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "pos_candidate_accounts",
-                    "type": "name[]"
+                    "name": "right_candidate",
+                    "type": "RightHolder"
                 },
                 {
-                    "name": "pos_voter_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "pos_candidate_positions",
-                    "type": "uint64[]"
-                },
-                {
-                    "name": "pos_voter_positions",
-                    "type": "uint64[]"
+                    "name": "right_voter",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -900,24 +852,8 @@
                     "type": "name"
                 },
                 {
-                    "name": "is_anyone",
-                    "type": "bool"
-                },
-                {
-                    "name": "is_any_community_member",
-                    "type": "bool"
-                },
-                {
-                    "name": "right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "right_badge_ids",
-                    "type": "uint64[]"
-                },
-                {
-                    "name": "right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_access",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -960,12 +896,8 @@
                     "type": "bool"
                 },
                 {
-                    "name": "right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_approver",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -1008,12 +940,8 @@
                     "type": "bool"
                 },
                 {
-                    "name": "right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_proposer",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -1034,12 +962,8 @@
                     "type": "bool"
                 },
                 {
-                    "name": "right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_sole_executor",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -1060,12 +984,8 @@
                     "type": "bool"
                 },
                 {
-                    "name": "right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_voter",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -1110,28 +1030,6 @@
             ]
         },
         {
-            "name": "verifyamend",
-            "base": "",
-            "fields": [
-                {
-                    "name": "community_account",
-                    "type": "name"
-                },
-                {
-                    "name": "code_id",
-                    "type": "uint64"
-                },
-                {
-                    "name": "execution_type",
-                    "type": "uint8"
-                },
-                {
-                    "name": "owner",
-                    "type": "name"
-                }
-            ]
-        },
-        {
             "name": "verifyholder",
             "base": "",
             "fields": [
@@ -1150,6 +1048,10 @@
                 {
                     "name": "owner",
                     "type": "name"
+                },
+                {
+                    "name": "is_ammend_holder",
+                    "type": "bool"
                 }
             ]
         },
@@ -1326,11 +1228,6 @@
         {
             "name": "setvoterule",
             "type": "setvoterule",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "verifyamend",
-            "type": "verifyamend",
             "ricardian_contract": ""
         },
         {

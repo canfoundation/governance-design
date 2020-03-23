@@ -88,10 +88,10 @@ ACTION community::createacc(name community_creator, name community_acc)
 {
     require_auth(get_self());
 
-    auto com_itr = _communitys.find(community_acc.value);
-    check(com_itr == _communitys.end(), "ERR::CREATEPROP_ALREADY_EXIST::Community already exists.");
+    auto com_itr = _communities.find(community_acc.value);
+    check(com_itr == _communities.end(), "ERR::CREATEPROP_ALREADY_EXIST::Community already exists.");
 
-    _communitys.emplace(_self, [&](auto &row) {
+    _communities.emplace(_self, [&](auto &row) {
         row.community_account = community_acc;
         row.creator = community_creator;
     });
@@ -131,11 +131,11 @@ ACTION community::create(name creator, name community_account, string &community
     check(community_url.length() > 3, "ERR::CREATEPROP_SHORT_URL::Url length is too short.");
     check(description.length() > 3, "ERR::CREATEPROP_SHORT_DESC::Description length is too short.");
 
-    auto com_itr = _communitys.find(community_account.value);
+    auto com_itr = _communities.find(community_account.value);
 
-    check(com_itr != _communitys.end() && com_itr->creator == creator, "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
+    check(com_itr != _communities.end() && com_itr->creator == creator, "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
 
-    _communitys.modify(com_itr, creator, [&](auto &row) {
+    _communities.modify(com_itr, creator, [&](auto &row) {
         row.community_name = community_name;
         row.member_badge = member_badge;
         row.community_url = community_url;
@@ -159,26 +159,25 @@ ACTION community::create(name creator, name community_account, string &community
         .send();
 }
 
-ACTION community::setaccess(name community_account, bool is_anyone, bool is_any_community_member, vector<name> right_accounts, vector<uint64_t> right_badge_ids, vector<uint64_t> right_pos_ids)
+ACTION community::setaccess(name community_account, RightHolder right_access)
 {
     require_auth(community_account);
 
-    auto com_itr = _communitys.find(community_account.value);
-    check(com_itr != _communitys.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
-    
-    accession default_accession;
-    auto it = std::find(right_accounts.begin(), right_accounts.end(), com_itr->creator);
-    if (it == right_accounts.end()) {
-        right_accounts.push_back(com_itr->creator);
+    auto com_itr = _communities.find(community_account.value);
+    check(com_itr != _communities.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
+
+    verify_right_holder_input(community_account, right_access);
+
+    auto it = std::find(right_access.accounts.begin(), right_access.accounts.end(), com_itr->creator);
+    if (it == right_access.accounts.end()) {
+        right_access.accounts.push_back(com_itr->creator);
     }
 
-    default_accession.right_access.is_anyone = is_anyone;
-    default_accession.right_access.is_any_community_member = is_any_community_member;
-    default_accession.right_access.accounts = right_accounts;
-    default_accession.right_access.required_positions = right_pos_ids;
-    default_accession.right_access.required_badges = right_badge_ids;
+    accession setting_accession;
+    setting_accession.right_access = right_access;
+
     accession_table _accession(_self, community_account.value);
-    _accession.set(default_accession, community_account);
+    _accession.set(setting_accession, community_account);
 }
 
 ACTION community::initcode(name community_account, name creator, bool create_default_code)
@@ -320,8 +319,8 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
 {
     require_auth(exec_account);
 
-    auto com_itr = _communitys.find(community_account.value);
-    check(com_itr != _communitys.end(), "ERR::VERIFY_FAILED::Community doesn't exist.");
+    auto com_itr = _communities.find(community_account.value);
+    check(com_itr != _communities.end(), "ERR::VERIFY_FAILED::Community doesn't exist.");
 
     code_table _codes(_self, community_account.value);
 
@@ -340,7 +339,7 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
                 permission_level{get_self(), "active"_n},
                 get_self(),
                 "verifyholder"_n,
-                std::make_tuple(community_account, code_id, uint8_t(ExecutionType::SOLE_DECISION), exec_account))
+                std::make_tuple(community_account, code_id, uint8_t(ExecutionType::SOLE_DECISION), exec_account, is_amend_action(execution_data.code_action)))
                 .send();
 
             call_action(community_account, code_itr->contract_name, execution_data.code_action, execution_data.packed_params);
@@ -351,8 +350,8 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
             action(
                 permission_level{get_self(), "active"_n},
                 get_self(),
-                "verifyamend"_n,
-                std::make_tuple(community_account, code_id, uint8_t(ExecutionType::SOLE_DECISION), exec_account))
+                "verifyholder"_n,
+                std::make_tuple(community_account, code_id, uint8_t(ExecutionType::SOLE_DECISION), exec_account, is_amend_action(execution_data.code_action)))
                 .send();
 
             call_action(community_account, _self, execution_data.code_action, execution_data.packed_params);
@@ -386,7 +385,7 @@ ACTION community::proposecode(name community_account, name proposer, name propos
                 permission_level{get_self(), "active"_n},
                 get_self(),
                 "verifyholder"_n,
-                std::make_tuple(community_account, code_id, uint8_t(ExecutionType::COLLECTIVE_DECISION), proposer))
+                std::make_tuple(community_account, code_id, uint8_t(ExecutionType::COLLECTIVE_DECISION), proposer, is_amend_action(execution_data.code_action)))
                 .send();
 
             code_collective_decision_table _collective_exec(_self, community_account.value);
@@ -402,8 +401,8 @@ ACTION community::proposecode(name community_account, name proposer, name propos
             action(
                 permission_level{get_self(), "active"_n},
                 get_self(),
-                "verifyamend"_n,
-                std::make_tuple(community_account, code_id, uint8_t(ExecutionType::COLLECTIVE_DECISION), proposer))
+                "verifyholder"_n,
+                std::make_tuple(community_account, code_id, uint8_t(ExecutionType::COLLECTIVE_DECISION), proposer, is_amend_action(execution_data.code_action)))
                 .send();
 
             ammend_collective_decision_table _collective_exec(_self, community_account.value);
@@ -487,15 +486,14 @@ ACTION community::execproposal(name community_account, name proposal_name)
     _proposals.erase(proposal_itr);
 }
 
-ACTION community::verifyholder(name community_account, uint64_t code_id, uint8_t execution_type, name owner)
+ACTION community::verifyholder(name community_account, uint64_t code_id, uint8_t execution_type, name owner, bool is_ammend_holder)
 {
     require_auth(_self);
 
-    auto com_itr = _communitys.find(community_account.value);
-    check(com_itr != _communitys.end(), "ERR::COMMUNITY_NOT_EXIST::Community is not existed.");
+    auto com_itr = _communities.find(community_account.value);
+    check(com_itr != _communities.end(), "ERR::COMMUNITY_NOT_EXIST::Community is not existed.");
 
     code_table _codes(_self, community_account.value);
-    position_table _positions(_self, community_account.value);
 
     auto code_itr = _codes.find(code_id);
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
@@ -503,159 +501,40 @@ ACTION community::verifyholder(name community_account, uint64_t code_id, uint8_t
     RightHolder right_holder;
 
     if (execution_type == ExecutionType::SOLE_DECISION) {
-        code_sole_decision_table _code_execution_rule(_self, community_account.value);
-        auto code_execution_rule_itr = _code_execution_rule.find(code_id);
+        if (is_ammend_holder) {
+            amend_sole_decision_table _amend_execution_rule(_self, community_account.value);
+            auto amend_execution_rule_itr = _amend_execution_rule.find(code_id);
 
-        check(code_execution_rule_itr != _code_execution_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code execution rule has not been initialize yet");
+            check(amend_execution_rule_itr != _amend_execution_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code execution rule has not been initialize yet");
 
-        right_holder = code_execution_rule_itr->right_executor;
+            right_holder = amend_execution_rule_itr->right_executor;
+        } else {
+            code_sole_decision_table _code_execution_rule(_self, community_account.value);
+            auto code_execution_rule_itr = _code_execution_rule.find(code_id);
+
+            check(code_execution_rule_itr != _code_execution_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code execution rule has not been initialize yet");
+
+            right_holder = code_execution_rule_itr->right_executor;
+        }
     } else {
-        code_collective_decision_table _code_vote_rule(_self, community_account.value);
-        auto code_vote_rule_itr = _code_vote_rule.find(code_id);
+        if (is_ammend_holder) {
+            ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
+            auto amend_vote_rule_itr = _amend_vote_rule.find(code_id);
 
-        check(code_vote_rule_itr != _code_vote_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code vote rule has not been initialize yet");
+            check(amend_vote_rule_itr != _amend_vote_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code vote rule has not been initialize yet");
 
-        right_holder = code_vote_rule_itr->right_proposer;
-    }
+            right_holder = amend_vote_rule_itr->right_proposer;
+        } else {
+            code_collective_decision_table _code_vote_rule(_self, community_account.value);
+            auto code_vote_rule_itr = _code_vote_rule.find(code_id);
 
-    const bool is_set_right_holder = right_holder.accounts.size() != 0 ||
-                                     right_holder.required_badges.size() != 0 ||
-                                     right_holder.required_positions.size() != 0 ||
-                                     right_holder.required_tokens.size() != 0;
+            check(code_vote_rule_itr != _code_vote_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code vote rule has not been initialize yet");
 
-    check(is_set_right_holder, "ERR::MISSING_RIGHT_HOLDER::Right holder for this code has not been set yet.");
-
-    // verify right_holder's account
-    auto _account_right_holders = right_holder.accounts;
-    auto it = std::find(_account_right_holders.begin(), _account_right_holders.end(), owner);
-    if (it != _account_right_holders.end())
-        return;
-
-    // verify right_holder's badge
-    auto _required_badge_ids = right_holder.required_badges;
-    for (int i = 0; i < _required_badge_ids.size(); i++)
-    {
-        ccerts _badges(cryptobadge_contract, owner.value);
-        auto owner_badge_itr = _badges.find(_required_badge_ids[i]);
-        if (owner_badge_itr != _badges.end())
-        {
-            return;
+            right_holder = code_vote_rule_itr->right_proposer;
         }
     }
 
-    // verify right_holder's position
-    auto _position_right_holder_ids = right_holder.required_positions;
-    for (int i = 0; i < _position_right_holder_ids.size(); i++)
-    {
-        auto position_itr = _positions.find(_position_right_holder_ids[i]);
-        auto _position_holders = position_itr->holders;
-        if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
-        {
-            return;
-        }
-    }
-
-    // verify right_holder's token
-    auto _required_token_ids = right_holder.required_tokens;
-    for (int i = 0; i < _required_token_ids.size(); i++)
-    {
-        accounts _acnts(tiger_token_contract, owner.value);
-        auto owner_token_itr = _acnts.find(_required_token_ids[i].symbol.code().raw());
-
-        if (owner_token_itr != _acnts.end() && owner_token_itr->balance.amount >= _required_token_ids[i].amount)
-        {
-            return;
-        }
-    }
-
-    check(false, "ERR::VERIFY_FAILED::Owner doesn't have permission to do this action.");
-}
-
-ACTION community::verifyamend(name community_account, uint64_t code_id, uint8_t execution_type, name owner)
-{
-    require_auth(_self);
-
-    auto com_itr = _communitys.find(community_account.value);
-    check(com_itr != _communitys.end(), "ERR::COMMUNITY_NOT_EXIST::Community is not existed.");
-
-    code_table _codes(_self, community_account.value);
-    position_table _positions(_self, community_account.value);
-
-    auto code_itr = _codes.find(code_id);
-    check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
-
-    RightHolder right_holder;
-
-    if (execution_type == ExecutionType::SOLE_DECISION) {
-        amend_sole_decision_table _amend_execution_rule(_self, community_account.value);
-        auto amend_execution_rule_itr = _amend_execution_rule.find(code_id);
-
-        check(amend_execution_rule_itr != _amend_execution_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code execution rule has not been initialize yet");
-
-        right_holder = amend_execution_rule_itr->right_executor;
-    } else {
-        ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
-        auto amend_vote_rule_itr = _amend_vote_rule.find(code_id);
-
-        check(amend_vote_rule_itr != _amend_vote_rule.end(), "ERR::CODE_EXECUTION_RULE_NOT_EXIST::Code vote rule has not been initialize yet");
-
-        right_holder = amend_vote_rule_itr->right_proposer;
-    }
-
-    const bool is_set_right_holder = right_holder.accounts.size() != 0 || 
-                                     right_holder.required_badges.size() != 0 ||
-                                     right_holder.required_positions.size() != 0 ||
-                                     right_holder.required_tokens.size() != 0;
-
-    check(is_set_right_holder, "ERR::MISSING_RIGHT_HOLDER::Right holder for this code has not been set yet.");
-
-    // verify right_holder's account
-    auto _account_right_holders = right_holder.accounts;
-    auto it = std::find(_account_right_holders.begin(), _account_right_holders.end(), owner);
-    if (it != _account_right_holders.end())
-         return;
-
-    // verify right_holder's badge
-    auto _required_badge_ids = right_holder.required_badges;
-    bool is_right_badge = (_required_badge_ids.size() == 0);
-    for (int i = 0; i < _required_badge_ids.size(); i++)
-    {
-        ccerts _badges(cryptobadge_contract, owner.value);
-        auto owner_badge_itr = _badges.find(_required_badge_ids[i]);
-        if (owner_badge_itr != _badges.end())
-        {
-            return;
-        }
-    }
-
-    // verify right_holder's position
-    auto _position_right_holder_ids = right_holder.required_positions;
-    bool is_right_position = (_position_right_holder_ids.size() == 0);
-    for (int i = 0; i < _position_right_holder_ids.size(); i++)
-    {
-        auto position_itr = _positions.find(_position_right_holder_ids[i]);
-        auto _position_holders = position_itr->holders;
-        if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
-        {
-            return;
-        }
-    }
-
-    // verify right_holder's token
-    auto _required_token_ids = right_holder.required_tokens;
-    bool is_right_token = (_required_token_ids.size() == 0);
-    for (int i = 0; i < _required_token_ids.size(); i++)
-    {
-        accounts _acnts(tiger_token_contract, owner.value);
-        auto owner_token_itr = _acnts.find(_required_token_ids[i].symbol.code().raw());
-
-        if (owner_token_itr != _acnts.end() && owner_token_itr->balance.amount >= _required_token_ids[i].amount)
-        {
-            return;
-        }
-    }
-
-    check(false, "ERR::VERIFY_FAILED::Owner doesn't have permission to do this action.");
+    check(verify_account_right_holder(community_account, right_holder, owner), "ERR::VERIFY_FAILED::Owner doesn't belong to code's right holder.");
 }
 
 ACTION community::createcode(name community_account, name code_name, name contract_name, vector<name> code_actions)
@@ -751,7 +630,7 @@ ACTION community::setexectype(name community_account, uint64_t code_id, uint8_t 
     }
 }
 
-ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids)
+ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_sole_executor)
 {
     require_auth(community_account);
 
@@ -760,16 +639,7 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
     auto code_itr = _codes.find(code_id);
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
 
-    RightHolder _right_holder;
-    _right_holder.accounts = right_accounts;
-
-    position_table _positions(_self, community_account.value);
-    for (auto pos_id : right_pos_ids)
-    {
-        auto pos_itr = _positions.find(pos_id);
-        check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::One or more position ids doesn't exist.");
-    }
-    _right_holder.required_positions = right_pos_ids;
+    verify_right_holder_input(community_account, right_sole_executor);
 
     if (is_amend_code) {
         amend_sole_decision_table _execution_rule(_self, community_account.value);
@@ -778,12 +648,12 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
 
         if (amend_execution_rule_itr != _execution_rule.end()) {
             _execution_rule.modify(amend_execution_rule_itr, community_account, [&](auto &row) {
-                    row.right_executor = _right_holder;
+                    row.right_executor = right_sole_executor;
             });
         } else {
             _execution_rule.emplace(community_account, [&](auto &row) {
                     row.code_id = code_id;
-                    row.right_executor = _right_holder;
+                    row.right_executor = right_sole_executor;
             });
         }
     } else {
@@ -794,18 +664,19 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
 
         if (code_execution_rule_itr != _execution_rule.end()) {
             _execution_rule.modify(code_execution_rule_itr, community_account, [&](auto &row) {
-                    row.right_executor = _right_holder;
+                    row.right_executor = right_sole_executor;
             });
         } else {
             _execution_rule.emplace(community_account, [&](auto &row) {
                     row.code_id = code_id;
-                    row.right_executor = _right_holder;
+                    row.right_executor = right_sole_executor;
             });
         }
     }
 }
 
-ACTION community::setproposer(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids) {
+ACTION community::setproposer(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_proposer)
+{
     require_auth(community_account);
 
     code_table _codes(_self, community_account.value);
@@ -813,16 +684,7 @@ ACTION community::setproposer(name community_account, uint64_t code_id, bool is_
     auto code_itr = _codes.find(code_id);
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
 
-    RightHolder _right_holder;
-    _right_holder.accounts = right_accounts;
-
-    position_table _positions(_self, community_account.value);
-    for (auto pos_id : right_pos_ids)
-    {
-        auto pos_itr = _positions.find(pos_id);
-        check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::One or more position ids doesn't exist.");
-    }
-    _right_holder.required_positions = right_pos_ids;
+    verify_right_holder_input(community_account, right_proposer);
 
     if (is_amend_code) {
         // check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set proposer for sole decision code");
@@ -833,12 +695,12 @@ ACTION community::setproposer(name community_account, uint64_t code_id, bool is_
 
         if (amend_vote_rule_itr != _amend_vote_rule.end()) {
             _amend_vote_rule.modify(amend_vote_rule_itr, community_account, [&](auto &row) {
-                    row.right_proposer = _right_holder;
+                    row.right_proposer = right_proposer;
             });
         } else {
             _amend_vote_rule.emplace(community_account, [&](auto &row) {
                     row.code_id = code_id;
-                    row.right_proposer = _right_holder;
+                    row.right_proposer = right_proposer;
             });
         }
     } else {
@@ -850,12 +712,12 @@ ACTION community::setproposer(name community_account, uint64_t code_id, bool is_
 
         if (code_vote_rule_itr != _code_vote_rule.end()) {
             _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
-                    row.right_proposer = _right_holder;
+                    row.right_proposer = right_proposer;
             });
         } else {
             _code_vote_rule.emplace(community_account, [&](auto &row) {
                     row.code_id = code_id;
-                    row.right_proposer = _right_holder;
+                    row.right_proposer = right_proposer;
             });
         }
     }
@@ -906,7 +768,8 @@ ACTION community::setapprotype(name community_account, uint64_t code_id, bool is
     }
 }
 
-ACTION community::setapprover(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids) {
+ACTION community::setapprover(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_approver) 
+{
     require_auth(community_account);
 
     code_table _codes(_self, community_account.value);
@@ -914,17 +777,7 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
     auto code_itr = _codes.find(code_id);
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
 
-    RightHolder _right_holder;
-    _right_holder.accounts = right_accounts;
-
-    position_table _positions(_self, community_account.value);
-    for (auto pos_id : right_pos_ids)
-    {
-        auto pos_itr = _positions.find(pos_id);
-        check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::One or more position ids doesn't exist.");
-    }
-    _right_holder.required_positions = right_pos_ids;
-
+    verify_right_holder_input(community_account, right_approver);
 
     if (is_amend_code) {
         // check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
@@ -937,7 +790,7 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
         check(amend_vote_rule_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS, "ERR::SET_APPROVER_FOR_CONSENSUS::Can not set approver for approval consensus code");
 
         _amend_vote_rule.modify(amend_vote_rule_itr, community_account, [&](auto &row) {
-                row.right_approver = _right_holder;
+                row.right_approver = right_approver;
         });
     } else {
         // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set approver for sole decision code");
@@ -950,12 +803,13 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
         check(code_vote_rule_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS, "ERR::SET_APPROVER_FOR_CONSENSUS::Can not set approver for approval consensus code");
 
         _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
-                row.right_approver = _right_holder;
+                row.right_approver = right_approver;
         });
     }
 }
 
-ACTION community::setvoter(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids) {
+ACTION community::setvoter(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_voter)
+{
     require_auth(community_account);
 
     code_table _codes(_self, community_account.value);
@@ -963,17 +817,7 @@ ACTION community::setvoter(name community_account, uint64_t code_id, bool is_ame
     auto code_itr = _codes.find(code_id);
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
 
-    RightHolder _right_holder;
-    _right_holder.accounts = right_accounts;
-
-    position_table _positions(_self, community_account.value);
-    for (auto pos_id : right_pos_ids)
-    {
-        auto pos_itr = _positions.find(pos_id);
-        check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::One or more position ids doesn't exist.");
-    }
-    _right_holder.required_positions = right_pos_ids;
-
+    verify_right_holder_input(community_account, right_voter);
 
     if (is_amend_code) {
         // check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set voter for sole decision code");
@@ -986,7 +830,7 @@ ACTION community::setvoter(name community_account, uint64_t code_id, bool is_ame
         check(amend_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::SET_APPROVER_FOR_CONSENSUS::Can not set voter for sole approval code");
 
         _amend_vote_rule.modify(amend_vote_rule_itr, community_account, [&](auto &row) {
-                row.right_voter = _right_holder;
+                row.right_voter = right_voter;
         });
     } else {
         // check(code_itr->code_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set voter for sole decision code");
@@ -999,7 +843,7 @@ ACTION community::setvoter(name community_account, uint64_t code_id, bool is_ame
         check(code_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::SET_APPROVER_FOR_CONSENSUS::Can not set voter for sole approval code");
 
         _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
-                row.right_voter = _right_holder;
+                row.right_voter = right_voter;
         });
     }
 }
@@ -1011,6 +855,8 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
 
     auto code_itr = _codes.find(code_id);
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code doesn't exist.");
+
+    check(0 < pass_rule && pass_rule <= 100, "ERR::INVALID_PASS_RULE::Pass rule percent is invalid");
 
     if (is_amend_code) {
         // check(code_itr->amendment_exec_type != ExecutionType::SOLE_DECISION, "ERR::VERIFY_FAILED::Can not set collective rule for sole decision code");
@@ -1056,30 +902,33 @@ ACTION community::voteforcode(name community_account, name proposal_name, name a
     bool is_executed = false;
 
     for (auto action: proposal_itr->code_actions) {
-        if (!is_amend_action(action.code_action))
+        const bool amend_action = is_amend_action(action.code_action);
+        if (!amend_action)
         {
             code_collective_decision_table _collective_exec(_self, community_account.value);
             auto collective_exec_itr = _collective_exec.find(proposal_itr->code_id);
             check(collective_exec_itr != _collective_exec.end(), "ERR::COLLECTIVE_RULE_NOT_EXIST::The collective rule for this code has not been set yet");
 
-            if (collective_exec_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS && verifyapprov(community_account, approver, proposal_itr->code_id)) {
+            check(collective_exec_itr->vote_duration + proposal_itr->propose_time.sec_since_epoch() > current_time_point().sec_since_epoch(), "ERR::VOTING_ENDED::Voting for this proposal has ben ended");
+
+            if (collective_exec_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS && verify_approver(community_account, approver, proposal_itr->code_id, amend_action)) {
                 call_action(community_account, code_itr->contract_name, action.code_action, action.packed_params);
                 is_executed = true;
             } else {
-                check(verifyvoter(community_account, approver, proposal_itr->code_id, false), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
-                check(collective_exec_itr->vote_duration + proposal_itr->propose_time.sec_since_epoch() > current_time_point().sec_since_epoch(), "ERR::VOTING_ENDED::Voting for this proposal has ben ended");
+                check(verify_voter(community_account, approver, proposal_itr->code_id, amend_action), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
             }
         } else {
             ammend_collective_decision_table _collective_exec(_self, community_account.value);
             auto collective_exec_itr = _collective_exec.find(proposal_itr->code_id);
             check(collective_exec_itr != _collective_exec.end(), "ERR::COLLECTIVE_RULE_NOT_EXIST::The collective rule for this code has not been set yet");
 
-            if (collective_exec_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS && verifyapprov(community_account, approver, proposal_itr->code_id)) {
+            check(collective_exec_itr->vote_duration + proposal_itr->propose_time.sec_since_epoch() > current_time_point().sec_since_epoch(), "ERR::VOTING_ENDED::Voting for this proposal has ben ended");
+
+            if (collective_exec_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS && verify_approver(community_account, approver, proposal_itr->code_id, amend_action)) {
                 call_action(community_account, code_itr->contract_name, action.code_action, action.packed_params);
                 is_executed = true;
             } else {
-                check(verifyvoter(community_account, approver, proposal_itr->code_id, true), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
-                check(collective_exec_itr->vote_duration + proposal_itr->propose_time.sec_since_epoch() > current_time_point().sec_since_epoch(), "ERR::VOTING_ENDED::Voting for this proposal has ben ended");
+                check(verify_voter(community_account, approver, proposal_itr->code_id, amend_action), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
             }
         }
     }
@@ -1118,12 +967,9 @@ ACTION community::createpos(
     uint64_t term,
     uint64_t next_term_start_at,
     uint64_t voting_period,
-    vector<name> pos_candidate_accounts,
-    vector<name> pos_voter_accounts,
-    vector<uint64_t> pos_candidate_positions,
-    vector<uint64_t> pos_voter_positions
-    )
-{
+    RightHolder right_candidate,
+    RightHolder right_voter
+) {
     require_auth(community_account);
 
     check(pos_name.length() > 3, "ERR::CREATEPROP_SHORT_TITLE::Name length is too short.");
@@ -1143,8 +989,8 @@ ACTION community::createpos(
 
     RightHolder _init_right_holder;
 
-    auto com_itr = _communitys.find(community_account.value);
-    check(com_itr != _communitys.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
+    auto com_itr = _communities.find(community_account.value);
+    check(com_itr != _communities.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
 
     _init_right_holder.accounts.push_back(creator);
 
@@ -1233,7 +1079,7 @@ ACTION community::createpos(
         permission_level{community_account, "active"_n},
         get_self(),
         "configpos"_n,
-        std::make_tuple(community_account, newPosition->pos_id, pos_name, max_holder, filled_through, term, next_term_start_at, voting_period, pos_candidate_accounts, pos_voter_accounts, pos_candidate_positions, pos_voter_positions))
+        std::make_tuple(community_account, newPosition->pos_id, pos_name, max_holder, filled_through, term, next_term_start_at, voting_period, right_candidate, right_voter))
         .send();
 }
 
@@ -1257,8 +1103,8 @@ ACTION community::initadminpos(name community_account, name creator)
     vector<name> init_admin_holder;
     init_admin_holder.push_back(creator);
 
-    auto com_itr = _communitys.find(community_account.value);
-    check(com_itr != _communitys.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
+    auto com_itr = _communities.find(community_account.value);
+    check(com_itr != _communities.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
 
     _init_right_holder.required_positions.push_back(newPositionId);
 
@@ -1347,8 +1193,18 @@ ACTION community::initadminpos(name community_account, name creator)
     });
 }
 
-ACTION community::configpos(name community_account, uint64_t pos_id, string pos_name, uint64_t max_holder, uint8_t filled_through, uint64_t term, uint64_t next_term_start_at, uint64_t voting_period, vector<name> pos_candidate_accounts, vector<name> pos_voter_accounts, vector<uint64_t> pos_candidate_positions, vector<uint64_t> pos_voter_positions)
-{
+ACTION community::configpos(
+        name community_account,
+        uint64_t pos_id,
+        string pos_name,
+        uint64_t max_holder,
+        uint8_t filled_through,
+        uint64_t term,
+        uint64_t next_term_start_at,
+        uint64_t voting_period,
+        RightHolder right_candidate,
+        RightHolder right_voter
+) {
     require_auth(community_account);
 
     check(pos_name.length() > 3, "ERR::CREATEPROP_SHORT_TITLE::Name length is too short.");
@@ -1371,13 +1227,8 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
         uint64_t votting_end_date = next_term_start_at - seconds_per_day;
 
         check(votting_start_date > current_time_point().sec_since_epoch(), "ERR::START_TIME_INVALID::Voting start date must greater than now.");
-        RightHolder _pos_candidates;
-        _pos_candidates.accounts = pos_candidate_accounts;
-        _pos_candidates.required_positions = pos_candidate_positions;
-
-        RightHolder _pos_voters;
-        _pos_voters.accounts = pos_voter_accounts;
-        _pos_voters.required_positions = pos_voter_positions;
+        verify_right_holder_input(community_account, right_candidate);
+        verify_right_holder_input(community_account, right_voter);
 
         election_table _electionrule(_self, community_account.value);
         auto election_rule_itr = _electionrule.find(pos_id);
@@ -1389,8 +1240,8 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
                 row.term = term;
                 row.next_term_start_at = time_point_sec(next_term_start_at);
                 row.voting_period = voting_period;
-                row.pos_candidates = _pos_candidates;
-                row.pos_voters = _pos_voters;
+                row.pos_candidates = right_candidate;
+                row.pos_voters = right_voter;
             });
         }
         else
@@ -1399,8 +1250,8 @@ ACTION community::configpos(name community_account, uint64_t pos_id, string pos_
                 row.term = term;
                 row.next_term_start_at = time_point_sec(next_term_start_at);
                 row.voting_period = voting_period;
-                row.pos_candidates = _pos_candidates;
-                row.pos_voters = _pos_voters;
+                row.pos_candidates = right_candidate;
+                row.pos_voters = right_voter;
             });
         }
 
@@ -1599,22 +1450,18 @@ ACTION community::dismisspos(name community_account, uint64_t pos_id, name holde
 }
 
 ACTION community::createbadge(
-    name community_account,
-    uint64_t badge_id,
-    uint8_t issue_type,
-    name badge_propose_name,
-    uint8_t issue_exec_type,
-    vector<name> issue_sole_right_accounts,
-    vector<uint64_t> issue_sole_right_pos_ids,
-    vector<name> issue_proposer_right_accounts,
-    vector<uint64_t> issue_proposer_right_pos_ids,
-    uint8_t issue_approval_type,
-    vector<name> issue_approver_right_accounts,
-    vector<uint64_t> issue_approver_right_pos_ids,
-    vector<name> issue_voter_right_accounts,
-    vector<uint64_t> issue_voter_right_pos_ids,
-    double issue_pass_rule,
-    uint64_t issue_vote_duration
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        name badge_propose_name,
+        uint8_t issue_exec_type,
+        RightHolder right_issue_sole_executor,
+        RightHolder right_issue_proposer,
+        uint8_t issue_approval_type,
+        RightHolder right_issue_approver,
+        RightHolder right_issue_voter,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration
 ) {
     // Todo: Verify badge param:
     action(
@@ -1667,30 +1514,22 @@ ACTION community::createbadge(
     });
 
     if (issue_exec_type != ExecutionType::COLLECTIVE_DECISION) {
-        RightHolder _right_holder;
-        _right_holder.accounts = issue_sole_right_accounts;
-        _right_holder.required_positions = issue_sole_right_pos_ids;
+        verify_right_holder_input(community_account, right_issue_sole_executor);
         _code_execution_rule.emplace(community_account, [&](auto &row) {
             row.code_id = issue_badge_code->code_id;
-            row.right_executor = _right_holder;
+            row.right_executor = right_issue_sole_executor;
         });
     }
 
     if (issue_exec_type != ExecutionType::SOLE_DECISION) {
-        RightHolder _right_proposer;
-        _right_proposer.accounts = issue_proposer_right_accounts;
-        _right_proposer.required_positions = issue_proposer_right_pos_ids;
-        RightHolder _right_approver;
-        _right_proposer.accounts = issue_approver_right_accounts;
-        _right_proposer.required_positions = issue_approver_right_pos_ids;
-        RightHolder _right_voter;
-        _right_proposer.accounts = issue_voter_right_accounts;
-        _right_proposer.required_positions = issue_voter_right_pos_ids;
+        verify_right_holder_input(community_account, right_issue_proposer);
+        verify_right_holder_input(community_account, right_issue_approver);
+        verify_right_holder_input(community_account, right_issue_voter);
         _code_vote_rule.emplace(community_account, [&](auto &row) {
             row.code_id = issue_badge_code->code_id;
-            row.right_proposer = _right_proposer;
-            row.right_approver = _right_approver;
-            row.right_voter = _right_voter;
+            row.right_proposer = right_issue_proposer;
+            row.right_approver = right_issue_approver;
+            row.right_voter = right_issue_voter;
             row.approval_type = issue_approval_type;
             row.pass_rule = issue_pass_rule;
             row.vote_duration = issue_vote_duration;
@@ -1752,22 +1591,18 @@ ACTION community::createbadge(
 }
 
 ACTION community::configbadge(
-    name community_account,
-    uint64_t badge_id,
-    uint8_t issue_type,
-    name update_badge_proposal_name,
-    uint8_t issue_exec_type,
-    vector<name> issue_sole_right_accounts,
-    vector<uint64_t> issue_sole_right_pos_ids,
-    vector<name> issue_proposer_right_accounts,
-    vector<uint64_t> issue_proposer_right_pos_ids,
-    uint8_t issue_approval_type,
-    vector<name> issue_approver_right_accounts,
-    vector<uint64_t> issue_approver_right_pos_ids,
-    vector<name> issue_voter_right_accounts,
-    vector<uint64_t> issue_voter_right_pos_ids,
-    double issue_pass_rule,
-    uint64_t issue_vote_duration
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        name update_badge_proposal_name,
+        uint8_t issue_exec_type,
+        RightHolder right_issue_sole_executor,
+        RightHolder right_issue_proposer,
+        uint8_t issue_approval_type,
+        RightHolder right_issue_approver,
+        RightHolder right_issue_voter,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration
 ) {
     if (update_badge_proposal_name != name("")) {
         // Todo: Verify badge param:
@@ -1796,9 +1631,6 @@ ACTION community::configbadge(
 
     position_table _positions(_self, community_account.value);
 
-    auto getByCodeName = _codes.get_index<"by.code.name"_n>();
-    auto ba_create_code = getByCodeName.find(BA_Create.value);
-
     name issue_badge_code_name;
     if (issue_type == BadgeIssueType::WITHOUT_CLAIM) {
         issue_badge_code_name = BA_Issue;
@@ -1811,6 +1643,7 @@ ACTION community::configbadge(
     auto getByCodeReferId = _codes.get_index<"by.refer.id"_n>();
     auto issue_badge_code_itr = getByCodeReferId.find(badge_id);
 
+    // find issue badge code of this configuring badge
     while (issue_badge_code_itr != getByCodeReferId.end()) {
         if (issue_badge_code_itr->code_type.type == CodeTypeEnum::BADGE && 
             ( issue_badge_code_itr->code_name == BA_Issue || issue_badge_code_itr->code_name == BA_Claim)) {
@@ -1840,48 +1673,40 @@ ACTION community::configbadge(
     }
 
     if (issue_exec_type != ExecutionType::COLLECTIVE_DECISION) {
-        RightHolder _right_holder;
-        _right_holder.accounts = issue_sole_right_accounts;
-        _right_holder.required_positions = issue_sole_right_pos_ids;
+        verify_right_holder_input(community_account, right_issue_sole_executor);
         auto code_exec_type_itr = _code_execution_rule.find(issue_badge_code_itr->code_id);
         if (code_exec_type_itr == _code_execution_rule.end()) {
             _code_execution_rule.emplace(community_account, [&](auto &row) {
                 row.code_id = issue_badge_code_itr->code_id;
-                row.right_executor = _right_holder;
+                row.right_executor = right_issue_sole_executor;
             });
         } else {
             _code_execution_rule.modify(code_exec_type_itr, community_account, [&](auto &row) {
-                row.right_executor = _right_holder;
+                row.right_executor = right_issue_sole_executor;
             });
         }
     }
 
     if (issue_exec_type != ExecutionType::SOLE_DECISION) {
-        RightHolder _right_proposer;
-        _right_proposer.accounts = issue_proposer_right_accounts;
-        _right_proposer.required_positions = issue_proposer_right_pos_ids;
-        RightHolder _right_approver;
-        _right_approver.accounts = issue_approver_right_accounts;
-        _right_approver.required_positions = issue_approver_right_pos_ids;
-        RightHolder _right_voter;
-        _right_voter.accounts = issue_voter_right_accounts;
-        _right_voter.required_positions = issue_voter_right_pos_ids;
+        verify_right_holder_input(community_account, right_issue_proposer);
+        verify_right_holder_input(community_account, right_issue_approver);
+        verify_right_holder_input(community_account, right_issue_voter);
         auto code_vote_rule_itr = _code_vote_rule.find(issue_badge_code_itr->code_id);
         if (code_vote_rule_itr == _code_vote_rule.end()) {
             _code_vote_rule.emplace(community_account, [&](auto &row) {
                 row.code_id = issue_badge_code_itr->code_id;
-                row.right_proposer = _right_proposer;
-                row.right_approver = _right_approver;
-                row.right_voter = _right_voter;
+                row.right_proposer = right_issue_proposer;
+                row.right_approver = right_issue_approver;
+                row.right_voter = right_issue_voter;
                 row.approval_type = issue_approval_type;
                 row.pass_rule = issue_pass_rule;
                 row.vote_duration = issue_vote_duration;
             });
         } else {
             _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
-                row.right_proposer = _right_proposer;
-                row.right_approver = _right_approver;
-                row.right_voter = _right_voter;
+                row.right_proposer = right_issue_proposer;
+                row.right_approver = right_issue_approver;
+                row.right_voter = right_issue_voter;
                 row.approval_type = issue_approval_type;
                 row.pass_rule = issue_pass_rule;
                 row.vote_duration = issue_vote_duration;
@@ -1908,7 +1733,7 @@ ACTION community::issuebadge(name community_account, name badge_propose_name)
         .send();
 }
 
-bool community::verifyvoter(name community_account, name voter, uint64_t code_id, bool is_amend_code)
+bool community::verify_voter(name community_account, name voter, uint64_t code_id, bool is_amend_code)
 {
     bool is_right_holder = false;
 
@@ -1927,62 +1752,33 @@ bool community::verifyvoter(name community_account, name voter, uint64_t code_id
         right_voter = collective_exec_itr->right_voter;
     }
 
-    auto _account_right_holders = right_voter.accounts;
-
-    is_right_holder = std::find(_account_right_holders.begin(), _account_right_holders.end(), voter) != _account_right_holders.end();
-
-    if (is_right_holder) {
-        return true;
-    }
-
-    auto _position_right_holder_ids = right_voter.required_positions;
-    position_table _positions(_self, community_account.value);
-    for (int i = 0; i < _position_right_holder_ids.size(); i++)
-    {
-        auto position_itr = _positions.find(_position_right_holder_ids[i]);
-        auto _position_holders = position_itr->holders;
-        if (std::find(_position_holders.begin(), _position_holders.end(), voter) != _position_holders.end())
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return verify_account_right_holder(community_account, right_voter, voter);
 }
 
-bool community::verifyapprov(name community_account, name approver, uint64_t code_id)
+bool community::verify_approver(name community_account, name approver, uint64_t code_id, bool is_ammnend_code)
 {
-    bool is_right_holder = false;
+    RightHolder right_holder;
+    if (is_ammnend_code) {
+        ammend_collective_decision_table _collective_exec(_self, community_account.value);
+        position_table _positions(_self, community_account.value);
 
-    code_collective_decision_table _collective_exec(_self, community_account.value);
-    position_table _positions(_self, community_account.value);
+        auto collective_exec_itr = _collective_exec.find(code_id);
 
-    auto collective_exec_itr = _collective_exec.find(code_id);
+        RightHolder right_holder = collective_exec_itr->right_approver;
+    } else {
+        code_collective_decision_table _collective_exec(_self, community_account.value);
+        position_table _positions(_self, community_account.value);
 
-    auto _account_right_holders = collective_exec_itr->right_approver.accounts;
+        auto collective_exec_itr = _collective_exec.find(code_id);
 
-    is_right_holder = std::find(_account_right_holders.begin(), _account_right_holders.end(), approver) != _account_right_holders.end();
-
-    if (is_right_holder) return true;
-
-    auto _position_right_holder_ids = collective_exec_itr->right_approver.required_positions;
-
-    for (int i = 0; i < _position_right_holder_ids.size(); i++)
-    {
-        auto position_itr = _positions.find(_position_right_holder_ids[i]);
-        auto _position_holders = position_itr->holders;
-        if (std::find(_position_holders.begin(), _position_holders.end(), approver) != _position_holders.end())
-        {
-            return true;
-        }
+        RightHolder right_holder = collective_exec_itr->right_approver;
     }
 
-    return false;
+    return verify_account_right_holder(community_account, right_holder, approver);
 }
 
 bool community::is_pos_candidate(name community_account, uint64_t pos_id, name owner)
 {
-
     election_table _electionrule(_self, community_account.value);
     auto election_itr = _electionrule.find(pos_id);
     check(election_itr != _electionrule.end(), "ERR::ELECTION_RULE_NOT_EXIST::Position need election rules.");
@@ -2067,6 +1863,109 @@ bool community::is_pos_voter(name community_account, uint64_t pos_id, name owner
 
     return false;
 }
+
+bool community::verify_account_right_holder(name community_account, RightHolder right_holder, name owner) {
+    const bool is_set_right_holder = right_holder.is_anyone ||
+                                     right_holder.is_any_community_member || 
+                                     right_holder.accounts.size() != 0 ||
+                                     right_holder.required_badges.size() != 0 ||
+                                     right_holder.required_positions.size() != 0 ||
+                                     right_holder.required_tokens.size() != 0 ||
+                                     right_holder.required_exp;
+
+    if (!is_set_right_holder) return false;
+
+    if (right_holder.is_anyone) {
+        return true;
+    }
+
+    // TODO verify account is community member
+    if (right_holder.is_any_community_member) {
+        return true;
+    }
+
+    // TODO verify account right exp
+    // if (required_exp) {
+
+    // }
+
+    // verify right_holder's account
+    auto _account_right_holders = right_holder.accounts;
+    auto it = std::find(_account_right_holders.begin(), _account_right_holders.end(), owner);
+    if (it != _account_right_holders.end())
+        return true;
+
+    // verify right_holder's badge
+    auto _required_badge_ids = right_holder.required_badges;
+    for (int i = 0; i < _required_badge_ids.size(); i++)
+    {
+        ccerts _badges(cryptobadge_contract, owner.value);
+        auto owner_badge_itr = _badges.find(_required_badge_ids[i]);
+        if (owner_badge_itr != _badges.end())
+        {
+            return true;
+        }
+    }
+
+    position_table _positions(_self, community_account.value);
+    // verify right_holder's position
+    auto _position_right_holder_ids = right_holder.required_positions;
+    for (int i = 0; i < _position_right_holder_ids.size(); i++)
+    {
+        auto position_itr = _positions.find(_position_right_holder_ids[i]);
+        auto _position_holders = position_itr->holders;
+        if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
+        {
+            return true;
+        }
+    }
+
+    // verify right_holder's token
+    auto _required_token_ids = right_holder.required_tokens;
+    for (int i = 0; i < _required_token_ids.size(); i++)
+    {
+        accounts _acnts(tiger_token_contract, owner.value);
+        auto owner_token_itr = _acnts.find(_required_token_ids[i].symbol.code().raw());
+
+        if (owner_token_itr != _acnts.end() && owner_token_itr->balance.amount >= _required_token_ids[i].amount)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// verify right holder input's logic is valid
+void community::verify_right_holder_input(name community_account, RightHolder right_holder) {
+    if ((right_holder.is_anyone) ) {
+        check(right_holder.is_any_community_member == 0 || 
+              right_holder.required_badges.size() == 0 ||
+              right_holder.required_positions.size() == 0 ||
+              right_holder.required_tokens.size() == 0 ||
+              right_holder.accounts.size() == 0,
+              "can not set another option if is anyone is true"
+              );
+    }
+
+    if (right_holder.is_any_community_member) {
+        check(right_holder.required_badges.size() == 0 ||
+              right_holder.required_positions.size() == 0 ||
+              right_holder.required_tokens.size() == 0 ||
+              right_holder.accounts.size() == 0,
+              "can not set another option if is any community member is true"
+              );
+    }
+
+    if (right_holder.required_positions.size()) {
+        position_table _positions(_self, community_account.value);
+        for (auto pos_id : right_holder.required_positions)
+        {
+            auto pos_itr = _positions.find(pos_id);
+            check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::One or more position ids in right holder doesn't exist.");
+        }
+    } 
+}
 /*
 * Increment, save and return id for a new position.
 */
@@ -2128,7 +2027,6 @@ EOSIO_ABI_CUSTOM(community,
 (setapprover)
 (setaccess)
 (transfer)
-(verifyamend)
 (createacc)
 (create)
 (initcode)
