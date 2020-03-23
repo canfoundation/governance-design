@@ -52,6 +52,16 @@
             ]
         },
         {
+            "name": "accession",
+            "base": "",
+            "fields": [
+                {
+                    "name": "right_access",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
             "name": "account",
             "base": "",
             "fields": [
@@ -264,6 +274,60 @@
             ]
         },
         {
+            "name": "configbadge",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "badge_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "issue_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "update_badge_proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "issue_exec_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "right_issue_sole_executor",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_issue_proposer",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "issue_approval_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "right_issue_approver",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_issue_voter",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "issue_pass_rule",
+                    "type": "float64"
+                },
+                {
+                    "name": "issue_vote_duration",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
             "name": "configpos",
             "base": "",
             "fields": [
@@ -300,24 +364,12 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "pass_rule",
-                    "type": "float64"
+                    "name": "right_candidate",
+                    "type": "RightHolder"
                 },
                 {
-                    "name": "pos_candidate_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "pos_voter_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "pos_candidate_positions",
-                    "type": "uint64[]"
-                },
-                {
-                    "name": "pos_voter_positions",
-                    "type": "uint64[]"
+                    "name": "right_voter",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -378,8 +430,48 @@
                     "type": "name"
                 },
                 {
+                    "name": "badge_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "issue_type",
+                    "type": "uint8"
+                },
+                {
                     "name": "badge_propose_name",
                     "type": "name"
+                },
+                {
+                    "name": "issue_exec_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "right_issue_sole_executor",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_issue_proposer",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "issue_approval_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "right_issue_approver",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_issue_voter",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "issue_pass_rule",
+                    "type": "float64"
+                },
+                {
+                    "name": "issue_vote_duration",
+                    "type": "uint64"
                 }
             ]
         },
@@ -428,6 +520,26 @@
                 {
                     "name": "filled_through",
                     "type": "uint8"
+                },
+                {
+                    "name": "term",
+                    "type": "uint64"
+                },
+                {
+                    "name": "next_term_start_at",
+                    "type": "uint64"
+                },
+                {
+                    "name": "voting_period",
+                    "type": "uint64"
+                },
+                {
+                    "name": "right_candidate",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_voter",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -472,10 +584,6 @@
                 {
                     "name": "voting_period",
                     "type": "uint64"
-                },
-                {
-                    "name": "pass_rule",
-                    "type": "float64"
                 },
                 {
                     "name": "pos_candidates",
@@ -736,6 +844,20 @@
             ]
         },
         {
+            "name": "setaccess",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "right_access",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
             "name": "setapprotype",
             "base": "",
             "fields": [
@@ -774,12 +896,8 @@
                     "type": "bool"
                 },
                 {
-                    "name": "right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_approver",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -822,12 +940,8 @@
                     "type": "bool"
                 },
                 {
-                    "name": "right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_proposer",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -848,12 +962,8 @@
                     "type": "bool"
                 },
                 {
-                    "name": "right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_sole_executor",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -874,12 +984,8 @@
                     "type": "bool"
                 },
                 {
-                    "name": "right_accounts",
-                    "type": "name[]"
-                },
-                {
-                    "name": "right_pos_ids",
-                    "type": "uint64[]"
+                    "name": "right_voter",
+                    "type": "RightHolder"
                 }
             ]
         },
@@ -924,28 +1030,6 @@
             ]
         },
         {
-            "name": "verifyamend",
-            "base": "",
-            "fields": [
-                {
-                    "name": "community_account",
-                    "type": "name"
-                },
-                {
-                    "name": "code_id",
-                    "type": "uint64"
-                },
-                {
-                    "name": "execution_type",
-                    "type": "uint8"
-                },
-                {
-                    "name": "owner",
-                    "type": "name"
-                }
-            ]
-        },
-        {
             "name": "verifyholder",
             "base": "",
             "fields": [
@@ -964,6 +1048,10 @@
                 {
                     "name": "owner",
                     "type": "name"
+                },
+                {
+                    "name": "is_ammend_holder",
+                    "type": "bool"
                 }
             ]
         },
@@ -1025,6 +1113,11 @@
         {
             "name": "approvepos",
             "type": "approvepos",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "configbadge",
+            "type": "configbadge",
             "ricardian_contract": ""
         },
         {
@@ -1098,6 +1191,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "setaccess",
+            "type": "setaccess",
+            "ricardian_contract": ""
+        },
+        {
             "name": "setapprotype",
             "type": "setapprotype",
             "ricardian_contract": ""
@@ -1133,11 +1231,6 @@
             "ricardian_contract": ""
         },
         {
-            "name": "verifyamend",
-            "type": "verifyamend",
-            "ricardian_contract": ""
-        },
-        {
             "name": "verifyholder",
             "type": "verifyholder",
             "ricardian_contract": ""
@@ -1154,6 +1247,13 @@
         }
     ],
     "tables": [
+        {
+            "name": "accession",
+            "type": "accession",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
         {
             "name": "accounts",
             "type": "account",

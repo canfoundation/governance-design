@@ -56,6 +56,11 @@ CONTRACT community : public contract
         BADGE,
     };
 
+    enum BadgeIssueType {
+        WITHOUT_CLAIM = 0,
+        CLAIM_APPROVE_BY_ISSUER,
+    };
+
    struct permission_level_weight {
       permission_level  permission;
       uint16_t          weight;
@@ -96,8 +101,19 @@ CONTRACT community : public contract
     };
 
 public:
+    struct RightHolder
+    {
+        bool is_anyone = false;
+        bool is_any_community_member = false;
+        vector<uint64_t> required_badges;
+        vector<uint64_t> required_positions;
+        vector<asset> required_tokens;
+        uint64_t required_exp;
+        vector<name> accounts;
+    };
+
     using contract::contract;
-    community(eosio::name receiver, eosio::name code, datastream<const char *> ds) : contract(receiver, code, ds), _communitys(_self, _self.value) {}
+    community(eosio::name receiver, eosio::name code, datastream<const char *> ds) : contract(receiver, code, ds), _communities(_self, _self.value) {}
 
     struct execution_code_data {
       name code_action;
@@ -110,6 +126,8 @@ public:
 
     ACTION create(name creator, name community_account, string & community_name, vector<uint64_t> member_badge, string & community_url, string & description, bool create_default_code);
 
+    ACTION setaccess(name community_account,RightHolder right_access);
+
     ACTION initcode(name community_account, name creator, bool create_default_code);
 
     ACTION initadminpos(name community_account, name creator);
@@ -120,9 +138,8 @@ public:
 
     ACTION execproposal(name community_account, name proposal_name);
 
-    ACTION verifyholder(name community_account, uint64_t code_id, uint8_t execution_type, name owner);
-
-    ACTION verifyamend(name community_account, uint64_t code_id, uint8_t execution_type, name owner);
+    // Verify owner has right to execute or propose code
+    ACTION verifyholder(name community_account, uint64_t code_id, uint8_t execution_type, name owner, bool is_ammend_holder);
 
     // Code Action
     ACTION createcode(name community_account, name code_name, name contract_name, vector<name> code_actions);
@@ -131,19 +148,19 @@ public:
     ACTION setexectype(name community_account, uint64_t code_id, uint8_t exec_type, bool is_amend_code);
 
     // set right holder for sole decision 
-    ACTION setsoleexec(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids);
+    ACTION setsoleexec(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_sole_executor);
 
     // set right for who can proposal code   
-    ACTION setproposer(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids);
+    ACTION setproposer(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_proposer);
 
     // set right for who can proposal code   
     ACTION setapprotype(name community_account, uint64_t code_id, bool is_amend_code, uint8_t approval_type);
 
     // set right for who can approve or vote for proposal
-    ACTION setapprover(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids);
+    ACTION setapprover(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_approver);
 
     // set right for who can approve or vote for proposal
-    ACTION setvoter(name community_account, uint64_t code_id, bool is_amend_code, vector<name> right_accounts, vector<uint64_t> right_pos_ids);
+    ACTION setvoter(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_voter);
 
     // set approval consensus requirements for collective decision
     ACTION setvoterule(name community_account, uint64_t code_id, bool is_amend_code, double pass_rule, uint64_t vote_duration); 
@@ -151,9 +168,31 @@ public:
     ACTION voteforcode(name community_account, name proposal_name, name approver, bool vote_status);
 
     // Code Position
-    ACTION createpos(name community_account, name creator, string pos_name, uint64_t max_holder, uint8_t filled_through);
+    ACTION createpos(
+        name community_account,
+        name creator,
+        string pos_name,
+        uint64_t max_holder,
+        uint8_t filled_through,
+        uint64_t term,
+        uint64_t next_term_start_at,
+        uint64_t voting_period,
+        RightHolder right_candidate,
+        RightHolder right_voter
+    );
 
-    ACTION configpos(name community_account, uint64_t pos_id, string pos_name, uint64_t max_holder, uint8_t filled_through, uint64_t term, uint64_t next_term_start_at, uint64_t voting_period, double pass_rule, vector<name> pos_candidate_accounts, vector<name> pos_voter_accounts, vector<uint64_t> pos_candidate_positions, vector<uint64_t> pos_voter_positions);
+    ACTION configpos(
+        name community_account,
+        uint64_t pos_id,
+        string pos_name,
+        uint64_t max_holder,
+        uint8_t filled_through,
+        uint64_t term,
+        uint64_t next_term_start_at,
+        uint64_t voting_period,
+        RightHolder right_candidate,
+        RightHolder right_voter
+    );
 
     ACTION appointpos(name community_account, uint64_t pos_id, vector<name> holder_accounts, const string& appoint_reason);
 
@@ -165,14 +204,44 @@ public:
 
     ACTION dismisspos(name community_account, uint64_t pos_id, name holder, const string& dismissal_reason);
 
-    ACTION createbadge(name community_account, name badge_propose_name);
+    ACTION createbadge(
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        name badge_propose_name,
+        uint8_t issue_exec_type,
+        RightHolder right_issue_sole_executor,
+        RightHolder right_issue_proposer,
+        uint8_t issue_approval_type,
+        RightHolder right_issue_approver,
+        RightHolder right_issue_voter,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration
+    );
+
+    ACTION configbadge(
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        name update_badge_proposal_name,
+        uint8_t issue_exec_type,
+        RightHolder right_issue_sole_executor,
+        RightHolder right_issue_proposer,
+        uint8_t issue_approval_type,
+        RightHolder right_issue_approver,
+        RightHolder right_issue_voter,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration
+    );
 
     ACTION issuebadge(name community_account, name badge_propose_name);
 
 private:
-    bool verifyapprov(name community_account, name voter, uint64_t code_id);
+    bool verify_approver(name community_account, name voter, uint64_t code_id, bool is_ammnend_code);
 
-    bool verifyvoter(name community_account, name voter, uint64_t code_id);
+    bool verify_voter(name community_account, name voter, uint64_t code_id, bool is_amend_code);
+
+    bool verify_account_right_holder(name community_account, RightHolder right_holder, name owner);
 
     bool is_pos_candidate(name community_account, uint64_t pos_id, name owner);
 
@@ -193,7 +262,11 @@ private:
 
     bool is_amend_action(name calling_action);
 
+    bool verify_community_account_input(name community_account);
+
     eosio::asset convertbytes2cat(uint32_t bytes);
+
+    void verify_right_holder_input(name community_account, RightHolder rightHolder);
 
     TABLE communityf
     {
@@ -204,21 +277,18 @@ private:
         string community_url;
         string description;
 
+        uint64_t by_creator() const { return creator.value; }
         uint64_t primary_key() const { return community_account.value; }
     };
 
-    typedef eosio::multi_index<"community"_n, communityf> community_table;
+    typedef eosio::multi_index<"community"_n, communityf, indexed_by< "by.creator"_n, const_mem_fun<communityf, uint64_t, &communityf::by_creator>>> community_table;
 
-    struct RightHolder
+    TABLE accession
     {
-        bool is_anyone = false;
-        bool is_any_community_member = false;
-        vector<uint64_t> required_badges;
-        vector<uint64_t> required_positions;
-        vector<asset> required_tokens;
-        uint64_t required_exp;
-        vector<name> accounts;
+        RightHolder right_access;
     };
+
+    typedef eosio::singleton<"accession"_n, accession> accession_table;
 
     // table codes with type sole decision with scope is community_creator
     TABLE codef
@@ -316,9 +386,9 @@ private:
         uint64_t term;
         time_point next_term_start_at;
         uint64_t voting_period;
-        double pass_rule;
         RightHolder pos_candidates;
         RightHolder pos_voters;
+
         uint64_t primary_key() const { return pos_id; }
     };
         
@@ -340,7 +410,7 @@ private:
         double voted_percent;
         map<name, uint64_t> voters_detail;
         uint64_t primary_key() const { return cadidate.value; }
-        double by_voted_percent() const { return voted_percent;}
+        double by_voted_percent() const { return -voted_percent;}
     };
     typedef eosio::multi_index<"poscandidate"_n, pos_candidate,indexed_by<"byvoted"_n, const_mem_fun<pos_candidate, double, &pos_candidate::by_voted_percent>>> poscandidate_table;
 	/*
@@ -381,5 +451,5 @@ private:
 			eosio::indexed_by< "issuer"_n, eosio::const_mem_fun<ccert, uint64_t, &ccert::by_issuer> >
 			> ccerts;
 
-    community_table _communitys;
+    community_table _communities;
 };
