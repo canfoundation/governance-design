@@ -10,6 +10,7 @@ const uint64_t init_ram_amount = 10 * 1024;
 const asset stake_net = asset(1'0000, CORE_SYMBOL);
 const asset stake_cpu = asset(1'0000, CORE_SYMBOL);
 
+const name community_name_creator = "c"_n;
 const name cryptobadge_contract = "badge"_n;
 const name tiger_token_contract = "tiger.token"_n;
 const name set_execution_type_action = "setexectype"_n;
@@ -51,13 +52,13 @@ void community::transfer(name from, name to, asset quantity, string memo)
     check(to == _self, "ERR::VERIFY_FAILED::contract is not involved in this transfer");
     check(quantity.symbol.is_valid(), "ERR::VERIFY_FAILED::invalid quantity");
     check(quantity.amount > 0, "ERR::VERIFY_FAILED::only positive quantity allowed");
-    check(quantity.symbol == CORE_SYMBOL, "ERR::VERIFY_FAILED::only accepts CAT");
     check(quantity.amount > 0, "ERR::VERIFY_FAILED::must transfer positive quantity");
 
     string community_str = memo.c_str();
-    if (community_str.length() == 12)
+    if ( quantity.symbol == CORE_SYMBOL && community_str != "deposit_core_symbol" )
     {
         name community_acc = name{community_str};
+        check(verify_community_account_input(community_acc), "community account name is invalid");
         check(!is_account(community_acc), "ERR::VERIFY_FAILED::account already exist");
 
         const asset ram_fee = convertbytes2cat(init_ram_amount);
@@ -101,10 +102,10 @@ ACTION community::createacc(name community_creator, name community_acc)
     authority active_authority = {1, {}, {account_permission_level}, std::vector<wait_weight>()};
 
     action(
-        permission_level{_self, "active"_n},
+        permission_level{community_name_creator, "active"_n},
         "eosio"_n,
         "newaccount"_n,
-        std::make_tuple(_self, community_acc, owner_authority, active_authority))
+        std::make_tuple(community_name_creator, community_acc, owner_authority, active_authority))
         .send();
 
     action(
@@ -448,7 +449,7 @@ ACTION community::execproposal(name community_account, name proposal_name)
             check(proposal_itr->propose_time.sec_since_epoch() + collective_exec_itr->vote_duration <= current_time_point().sec_since_epoch(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
 
             // check that code has been accepted by voter or not
-            check(proposal_itr->voted_percent > collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been aceepted by voter");
+            check(proposal_itr->voted_percent >= collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been aceepted by voter");
 
             // check that proposal has been executed or not
             check(proposal_itr->proposal_status != EXECUTED, "ERR::EXECUTED_PROPOSAL::This proposal has been executed");
@@ -471,7 +472,7 @@ ACTION community::execproposal(name community_account, name proposal_name)
             check(proposal_itr->propose_time.sec_since_epoch() + collective_exec_itr->vote_duration <= current_time_point().sec_since_epoch(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
 
             // check that code has been accepted by voter or not
-            check(proposal_itr->voted_percent > collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been aceepted by voter");
+            check(proposal_itr->voted_percent >= collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been aceepted by voter");
 
             // check that proposal has been executed or not
             check(proposal_itr->proposal_status != EXECUTED, "ERR::EXECUTED_PROPOSAL::This proposal has been executed");
@@ -526,46 +527,36 @@ ACTION community::verifyholder(name community_account, uint64_t code_id, uint8_t
 
     // verify right_holder's account
     auto _account_right_holders = right_holder.accounts;
-    bool is_right_account = (_account_right_holders.size() == 0);
     auto it = std::find(_account_right_holders.begin(), _account_right_holders.end(), owner);
     if (it != _account_right_holders.end())
-        is_right_account = true;
-
-    check(is_right_account, "ERR::VERIFY_FAILED::Owner doesn't belong to code's right accounts.");
+        return;
 
     // verify right_holder's badge
     auto _required_badge_ids = right_holder.required_badges;
-    bool is_right_badge = (_required_badge_ids.size() == 0);
     for (int i = 0; i < _required_badge_ids.size(); i++)
     {
         ccerts _badges(cryptobadge_contract, owner.value);
         auto owner_badge_itr = _badges.find(_required_badge_ids[i]);
         if (owner_badge_itr != _badges.end())
         {
-            is_right_badge = true;
-            break;
+            return;
         }
     }
-    check(is_right_badge, "ERR::VERIFY_FAILED::Owner doesn't belong to code's right badges.");
 
     // verify right_holder's position
     auto _position_right_holder_ids = right_holder.required_positions;
-    bool is_right_position = (_position_right_holder_ids.size() == 0);
     for (int i = 0; i < _position_right_holder_ids.size(); i++)
     {
         auto position_itr = _positions.find(_position_right_holder_ids[i]);
         auto _position_holders = position_itr->holders;
         if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
         {
-            is_right_position = true;
-            break;
+            return;
         }
     }
-    check(is_right_position, "ERR::VERIFY_FAILED::Owner doesn't belong to code's right positions.");
 
     // verify right_holder's token
     auto _required_token_ids = right_holder.required_tokens;
-    bool is_right_token = (_required_token_ids.size() == 0);
     for (int i = 0; i < _required_token_ids.size(); i++)
     {
         accounts _acnts(tiger_token_contract, owner.value);
@@ -573,11 +564,11 @@ ACTION community::verifyholder(name community_account, uint64_t code_id, uint8_t
 
         if (owner_token_itr != _acnts.end() && owner_token_itr->balance.amount >= _required_token_ids[i].amount)
         {
-            is_right_token = true;
-            break;
+            return;
         }
     }
-    check(is_right_token, "ERR::VERIFY_FAILED::Owner doesn't belong to code's right token.");
+
+    check(false, "ERR::VERIFY_FAILED::Owner doesn't have permission to do this action.");
 }
 
 ACTION community::verifyamend(name community_account, uint64_t code_id, uint8_t execution_type, name owner)
@@ -620,12 +611,9 @@ ACTION community::verifyamend(name community_account, uint64_t code_id, uint8_t 
 
     // verify right_holder's account
     auto _account_right_holders = right_holder.accounts;
-    bool is_right_account = (_account_right_holders.size() == 0);
     auto it = std::find(_account_right_holders.begin(), _account_right_holders.end(), owner);
     if (it != _account_right_holders.end())
-        is_right_account = true;
-
-    check(is_right_account, "ERR::VERIFY_FAILED::Owner doesn't belong to code's right accounts.");
+         return;
 
     // verify right_holder's badge
     auto _required_badge_ids = right_holder.required_badges;
@@ -636,11 +624,9 @@ ACTION community::verifyamend(name community_account, uint64_t code_id, uint8_t 
         auto owner_badge_itr = _badges.find(_required_badge_ids[i]);
         if (owner_badge_itr != _badges.end())
         {
-            is_right_badge = true;
-            break;
+            return;
         }
     }
-    check(is_right_badge, "ERR::VERIFY_FAILED::Owner doesn't belong to code's right badges.");
 
     // verify right_holder's position
     auto _position_right_holder_ids = right_holder.required_positions;
@@ -651,11 +637,9 @@ ACTION community::verifyamend(name community_account, uint64_t code_id, uint8_t 
         auto _position_holders = position_itr->holders;
         if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
         {
-            is_right_position = true;
-            break;
+            return;
         }
     }
-    check(is_right_position, "ERR::VERIFY_FAILED::Owner doesn't belong to code's right positions.");
 
     // verify right_holder's token
     auto _required_token_ids = right_holder.required_tokens;
@@ -667,11 +651,11 @@ ACTION community::verifyamend(name community_account, uint64_t code_id, uint8_t 
 
         if (owner_token_itr != _acnts.end() && owner_token_itr->balance.amount >= _required_token_ids[i].amount)
         {
-            is_right_token = true;
-            break;
+            return;
         }
     }
-    check(is_right_token, "ERR::VERIFY_FAILED::Owner doesn't belong to code's right token.");
+
+    check(false, "ERR::VERIFY_FAILED::Owner doesn't have permission to do this action.");
 }
 
 ACTION community::createcode(name community_account, name code_name, name contract_name, vector<name> code_actions)
@@ -1035,7 +1019,7 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
 
         auto amend_vote_rule_itr = _amend_vote_rule.find(code_id);
         check(amend_vote_rule_itr != _amend_vote_rule.end(), "ERR::VERIFY_FAILED::Please initialize approval type first");
-        check(amend_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::VERIFY_FAILED::Can not set voter for sole approval code");
+        // check(amend_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::VERIFY_FAILED::Can not set voter for sole approval code");
 
         _amend_vote_rule.modify(amend_vote_rule_itr, community_account, [&](auto &row) {
                 row.vote_duration = vote_duration;
@@ -1048,7 +1032,7 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
 
         auto code_vote_rule_itr = _code_vote_rule.find(code_id);
         check(code_vote_rule_itr != _code_vote_rule.end(), "ERR::VERIFY_FAILED::Please initialize approval type first");
-        check(code_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::VERIFY_FAILED::Can not set voter for sole approval code");
+        // check(code_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::VERIFY_FAILED::Can not set voter for sole approval code");
 
         _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
                 row.vote_duration = vote_duration;
@@ -1947,8 +1931,11 @@ bool community::verifyvoter(name community_account, name voter, uint64_t code_id
 
     is_right_holder = std::find(_account_right_holders.begin(), _account_right_holders.end(), voter) != _account_right_holders.end();
 
-    auto _position_right_holder_ids = right_voter.required_positions;
+    if (is_right_holder) {
+        return true;
+    }
 
+    auto _position_right_holder_ids = right_voter.required_positions;
     position_table _positions(_self, community_account.value);
     for (int i = 0; i < _position_right_holder_ids.size(); i++)
     {
@@ -1956,12 +1943,11 @@ bool community::verifyvoter(name community_account, name voter, uint64_t code_id
         auto _position_holders = position_itr->holders;
         if (std::find(_position_holders.begin(), _position_holders.end(), voter) != _position_holders.end())
         {
-            is_right_holder = true;
-            break;
+            return true;
         }
     }
 
-    return is_right_holder;
+    return false;
 }
 
 bool community::verifyapprov(name community_account, name approver, uint64_t code_id)
@@ -1977,6 +1963,8 @@ bool community::verifyapprov(name community_account, name approver, uint64_t cod
 
     is_right_holder = std::find(_account_right_holders.begin(), _account_right_holders.end(), approver) != _account_right_holders.end();
 
+    if (is_right_holder) return true;
+
     auto _position_right_holder_ids = collective_exec_itr->right_approver.required_positions;
 
     for (int i = 0; i < _position_right_holder_ids.size(); i++)
@@ -1985,12 +1973,11 @@ bool community::verifyapprov(name community_account, name approver, uint64_t cod
         auto _position_holders = position_itr->holders;
         if (std::find(_position_holders.begin(), _position_holders.end(), approver) != _position_holders.end())
         {
-            is_right_holder = true;
-            break;
+            return true;
         }
     }
 
-    return is_right_holder;
+    return false;
 }
 
 bool community::is_pos_candidate(name community_account, uint64_t pos_id, name owner)
@@ -2001,16 +1988,12 @@ bool community::is_pos_candidate(name community_account, uint64_t pos_id, name o
     check(election_itr != _electionrule.end(), "ERR::ELECTION_RULE_NOT_EXIST::Position need election rules.");
     auto _pos_candidate_holder = election_itr->pos_candidates.accounts;
 
-    bool is_right_account = (_pos_candidate_holder.size() == 0);
     auto it = std::find(_pos_candidate_holder.begin(), _pos_candidate_holder.end(), owner);
     if (it != _pos_candidate_holder.end())
-        is_right_account = true;
-
-    if (!is_right_account) return is_right_account;
+        return true;
 
     auto _position_right_holder_ids = election_itr->pos_candidates.required_positions;
 
-    bool is_right_position = (_position_right_holder_ids.size() == 0);;
     position_table _positions(_self, community_account.value);
     for (int i = 0; i < _position_right_holder_ids.size(); i++)
     {
@@ -2018,28 +2001,33 @@ bool community::is_pos_candidate(name community_account, uint64_t pos_id, name o
         auto _position_holders = position_itr->holders;
         if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
         {
-            is_right_position = true;
-            break;
+            return true;
         }
     }
 
-    if (!is_right_position) return is_right_position;
-
     // verify right_holder's badge
     auto _required_badge_ids = election_itr->pos_candidates.required_badges;
-    bool is_right_badge = (_required_badge_ids.size() == 0);
     for (int i = 0; i < _required_badge_ids.size(); i++)
     {
         ccerts _badges(cryptobadge_contract, owner.value);
         auto owner_badge_itr = _badges.find(_required_badge_ids[i]);
         if (owner_badge_itr != _badges.end())
         {
-            is_right_badge = true;
-            break;
+            return true;
         }
     }
 
-    return is_right_badge;
+    return false;
+}
+
+bool community::verify_community_account_input(name community_account) {
+    if (community_account.length() < 6) return false;
+
+    if (community_account.suffix() != community_name_creator) {
+        return false;
+    }
+
+    return true;
 }
 
 bool community::is_pos_voter(name community_account, uint64_t pos_id, name owner)
@@ -2049,16 +2037,12 @@ bool community::is_pos_voter(name community_account, uint64_t pos_id, name owner
     check(election_itr != _electionrule.end(), "ERR::ELECTION_RULE_NOT_EXIST::Position need election rules.");
     auto _pos_voter_holder = election_itr->pos_voters.accounts;
 
-    bool is_right_account = (_pos_voter_holder.size() == 0);
     auto it = std::find(_pos_voter_holder.begin(), _pos_voter_holder.end(), owner);
     if (it != _pos_voter_holder.end())
-        is_right_account = true;
-
-    if (!is_right_account) return is_right_account;
+        return true;
 
     auto _position_right_holder_ids = election_itr->pos_voters.required_positions;
 
-    bool is_right_position = (_position_right_holder_ids.size() == 0);
     position_table _positions(_self, community_account.value);
     for (int i = 0; i < _position_right_holder_ids.size(); i++)
     {
@@ -2066,27 +2050,22 @@ bool community::is_pos_voter(name community_account, uint64_t pos_id, name owner
         auto _position_holders = position_itr->holders;
         if (std::find(_position_holders.begin(), _position_holders.end(), owner) != _position_holders.end())
         {
-            is_right_position = true;
-            break;
+            return true;
         }
     }
 
-    if (!is_right_position) return is_right_position;
-
     auto _required_badge_ids = election_itr->pos_voters.required_badges;
-    bool is_right_badge = (_required_badge_ids.size() == 0);
     for (int i = 0; i < _required_badge_ids.size(); i++)
     {
         ccerts _badges(cryptobadge_contract, owner.value);
         auto owner_badge_itr = _badges.find(_required_badge_ids[i]);
         if (owner_badge_itr != _badges.end())
         {
-            is_right_badge = true;
-            break;
+            return true;
         }
     }
 
-    return is_right_badge;
+    return false;
 }
 /*
 * Increment, save and return id for a new position.
