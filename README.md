@@ -1,6 +1,6 @@
 # governance-design
 
-## Version : 1.0.0
+## Version : 1.1.0
 
 This repository is a provided following contracts:
 
@@ -8,7 +8,7 @@ This repository is a provided following contracts:
 
 
 Dependencies:
-* [eosio v1.8.x](https://github.com/EOSIO/eos/releases/tag/v1.8.0-rc2)
+* [can v1.0.x](https://github.com/canfoundation/CAN/releases/tag/can-v1.0.0)
 * [eosio.cdt v1.7.x](https://github.com/EOSIO/eosio.cdt/releases/tag/v1.7.0)
 
 To build the contracts 
