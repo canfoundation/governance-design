@@ -3,6 +3,8 @@
 #include "exchange_state.cpp"
 #include <eosio/permission.hpp>
 
+const name ram_payer_system = "rampayer.can"_n;
+
 const symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
 const symbol ram_symbol = symbol(symbol_code("RAM"), 0);
 const symbol CORE_SYMBOL = symbol(symbol_code("CAT"), 4);
@@ -127,6 +129,9 @@ ACTION community::create(name creator, name community_account, string &community
 {
     require_auth(creator);
 
+    auto ram_payer = creator;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     check(community_name.length() > 3, "ERR::CREATEPROP_SHORT_TITLE::Name length is too short.");
     check(community_url.length() > 3, "ERR::CREATEPROP_SHORT_URL::Url length is too short.");
     check(description.length() > 3, "ERR::CREATEPROP_SHORT_DESC::Description length is too short.");
@@ -135,7 +140,7 @@ ACTION community::create(name creator, name community_account, string &community
 
     check(com_itr != _communities.end() && com_itr->creator == creator, "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
 
-    _communities.modify(com_itr, creator, [&](auto &row) {
+    _communities.modify(com_itr, ram_payer, [&](auto &row) {
         row.community_name = community_name;
         row.member_badge = member_badge;
         row.community_url = community_url;
@@ -163,6 +168,9 @@ ACTION community::setaccess(name community_account, RightHolder right_access)
 {
     require_auth(community_account);
 
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     auto com_itr = _communities.find(community_account.value);
     check(com_itr != _communities.end(), "ERR::CREATEPROP_NOT_EXIST::Community does not exist.");
 
@@ -177,13 +185,16 @@ ACTION community::setaccess(name community_account, RightHolder right_access)
     setting_accession.right_access = right_access;
 
     accession_table _accession(_self, community_account.value);
-    _accession.set(setting_accession, community_account);
+    _accession.set(setting_accession, ram_payer);
 }
 
 ACTION community::initcode(name community_account, name creator, bool create_default_code)
 {
     require_auth(community_account);
 
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+    
     code_table _codes(_self, community_account.value);
 
     auto code_itr = _codes.find(CO_Amend.value);
@@ -209,7 +220,7 @@ ACTION community::initcode(name community_account, name creator, bool create_def
     _init_right_holder.required_positions.push_back(pos_admin_id);
 
     // initialize createcode code
-    auto co_amend_code = _codes.emplace(community_account, [&](auto &row) {
+    auto co_amend_code = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = CO_Amend;
         row.contract_name = get_self();
@@ -219,12 +230,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
         row.code_type = {NORMAL, 0};
     });
 
-    _code_execution_rule.emplace(community_account, [&](auto &row) {
+    _code_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = co_amend_code->code_id;
             row.right_executor = _init_right_holder;
     });
 
-    _amend_execution_rule.emplace(community_account, [&](auto &row) {
+    _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = co_amend_code->code_id;
             row.right_executor = _init_right_holder;
     });
@@ -238,7 +249,7 @@ ACTION community::initcode(name community_account, name creator, bool create_def
             _init_actions.push_back("createpos"_n);
 
             // initialize createcode code
-            auto po_create_code = _codes.emplace(community_account, [&](auto &row) {
+            auto po_create_code = _codes.emplace(ram_payer, [&](auto &row) {
                 row.code_id = _codes.available_primary_key();
                 row.code_name = PO_Create;
                 row.contract_name = get_self();
@@ -248,12 +259,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
                 row.code_type = {NORMAL, 0};
             });
 
-            _code_execution_rule.emplace(community_account, [&](auto &row) {
+            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = po_create_code->code_id;
                 row.right_executor = _init_right_holder;
             });
 
-            _amend_execution_rule.emplace(community_account, [&](auto &row) {
+            _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = po_create_code->code_id;
                 row.right_executor = _init_right_holder;
             });
@@ -265,7 +276,7 @@ ACTION community::initcode(name community_account, name creator, bool create_def
             _init_actions.push_back("setaccess"_n);
 
             // initialize createcode code
-            auto co_access_code = _codes.emplace(community_account, [&](auto &row) {
+            auto co_access_code = _codes.emplace(ram_payer, [&](auto &row) {
                 row.code_id = _codes.available_primary_key();
                 row.code_name = CO_Access;
                 row.contract_name = get_self();
@@ -275,12 +286,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
                 row.code_type = {NORMAL, 0};
             });
 
-            _code_execution_rule.emplace(community_account, [&](auto &row) {
+            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_access_code->code_id;
                 row.right_executor = _init_right_holder;
             });
 
-            _amend_execution_rule.emplace(community_account, [&](auto &row) {
+            _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_access_code->code_id;
                 row.right_executor = _init_right_holder;
             });
@@ -292,7 +303,7 @@ ACTION community::initcode(name community_account, name creator, bool create_def
             _init_actions.push_back("createbadge"_n);
 
             // initialize createcode code
-            auto ba_create_code = _codes.emplace(community_account, [&](auto &row) {
+            auto ba_create_code = _codes.emplace(ram_payer, [&](auto &row) {
                 row.code_id = _codes.available_primary_key();
                 row.code_name = BA_Create;
                 row.contract_name = get_self();
@@ -302,12 +313,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
                 row.code_type = {NORMAL, 0};
             });
 
-            _code_execution_rule.emplace(community_account, [&](auto &row) {
+            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = ba_create_code->code_id;
                 row.right_executor = _init_right_holder;
             });
 
-            _amend_execution_rule.emplace(community_account, [&](auto &row) {
+            _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = ba_create_code->code_id;
                 row.right_executor = _init_right_holder;
             });
@@ -315,9 +326,36 @@ ACTION community::initcode(name community_account, name creator, bool create_def
     }
 }
 
+ACTION community::inputmembers(name community_account, vector<name> added_members, vector<name> removed_members)
+{
+    require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
+    members_table _members(_self, community_account.value);
+
+    for (auto added_member: added_members){
+        auto mem_itr = _members.find(added_member.value);
+        check(mem_itr == _members.end(), "ERR::MEMBER_ALREADY_EXIST::At least one of the member already exist.");
+        _members.emplace(ram_payer, [&](auto &row) {
+            row.member = added_member;
+        });
+    }
+
+    for (auto removed_member: removed_members){
+        auto mem_itr = _members.find(removed_member.value);
+        check(mem_itr != _members.end(), "ERR::MEMBER_NOT_FOUND::At least one of the member was not found.");
+        _members.erase(mem_itr);
+    }
+}
+
 ACTION community::execcode(name community_account, name exec_account, uint64_t code_id, vector<execution_code_data> code_actions)
 {
     require_auth(exec_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     auto com_itr = _communities.find(community_account.value);
     check(com_itr != _communities.end(), "ERR::VERIFY_FAILED::Community doesn't exist.");
@@ -342,7 +380,7 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
                 std::make_tuple(community_account, code_id, uint8_t(ExecutionType::SOLE_DECISION), exec_account, is_amend_action(execution_data.code_action)))
                 .send();
 
-            call_action(community_account, code_itr->contract_name, execution_data.code_action, execution_data.packed_params);
+            call_action(community_account, ram_payer, code_itr->contract_name, execution_data.code_action, execution_data.packed_params);
         }
         else
         {
@@ -354,7 +392,7 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
                 std::make_tuple(community_account, code_id, uint8_t(ExecutionType::SOLE_DECISION), exec_account, is_amend_action(execution_data.code_action)))
                 .send();
 
-            call_action(community_account, _self, execution_data.code_action, execution_data.packed_params);
+            call_action(community_account, ram_payer, _self, execution_data.code_action, execution_data.packed_params);
         }
     }
 }
@@ -362,6 +400,9 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
 ACTION community::proposecode(name community_account, name proposer, name proposal_name, uint64_t code_id, vector<execution_code_data> code_actions)
 {
     require_auth(proposer);
+
+    auto ram_payer = proposer;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;    
 
     code_table _codes(_self, community_account.value);
 
@@ -413,7 +454,7 @@ ACTION community::proposecode(name community_account, name proposer, name propos
         }
     }
 
-    _proposals.emplace(proposer, [&](auto &row) {
+    _proposals.emplace(ram_payer, [&](auto &row) {
         row.proposal_name = proposal_name;
         row.proposer = proposer;
         row.code_id = code_id;
@@ -427,6 +468,9 @@ ACTION community::proposecode(name community_account, name proposer, name propos
 
 ACTION community::execproposal(name community_account, name proposal_name)
 {
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     code_proposals_table _proposals(_self, community_account.value);
     auto proposal_itr = _proposals.find(proposal_name.value);
     check(proposal_itr != _proposals.end(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
@@ -456,7 +500,7 @@ ACTION community::execproposal(name community_account, name proposal_name)
             // check that proposal has been expired
             check(proposal_itr->proposal_status != EXPIRED, "ERR::EXPIRED_PROPOSAL::This proposal has been expired");
 
-            call_action(community_account, _self, action.code_action, action.packed_params);
+            call_action(community_account, ram_payer, _self, action.code_action, action.packed_params);
         }
         else
         {
@@ -479,7 +523,7 @@ ACTION community::execproposal(name community_account, name proposal_name)
             // check that proposal has been expired
             check(proposal_itr->proposal_status != EXPIRED, "ERR::EXPIRED_PROPOSAL::This proposal has been expired");
 
-            call_action(community_account, code_itr->contract_name, action.code_action, action.packed_params);
+            call_action(community_account, ram_payer, code_itr->contract_name, action.code_action, action.packed_params);
         }
     }
 
@@ -541,6 +585,9 @@ ACTION community::createcode(name community_account, name code_name, name contra
 {
     require_auth(community_account);
 
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     code_table _codes(_self, community_account.value);
 
     code_sole_decision_table _code_execution_rule(_self, community_account.value);
@@ -557,7 +604,7 @@ ACTION community::createcode(name community_account, name code_name, name contra
     auto co_amend_code = getByCodeName.find(CO_Amend.value);
 
     // save new code to the table
-    auto new_codes = _codes.emplace(community_account, [&](auto &row) {
+    auto new_codes = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = code_name;
         row.contract_name = contract_name;
@@ -570,7 +617,7 @@ ACTION community::createcode(name community_account, name code_name, name contra
     if (co_amend_code->code_exec_type != ExecutionType::COLLECTIVE_DECISION) {
         auto co_amend_code_sole_decision = _code_execution_rule.find(co_amend_code->code_id);
         if(co_amend_code_sole_decision != _code_execution_rule.end()) {
-            _amend_execution_rule.emplace(community_account, [&](auto &row) {
+            _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = new_codes->code_id;
                 row.right_executor = co_amend_code_sole_decision->right_executor;
             });
@@ -580,7 +627,7 @@ ACTION community::createcode(name community_account, name code_name, name contra
     if (co_amend_code->code_exec_type != ExecutionType::SOLE_DECISION) {
         auto co_amend_code_collective_decision = _code_vote_rule.find(co_amend_code->code_id);
         if (co_amend_code_collective_decision != _code_vote_rule.end()) {
-            _amend_vote_rule.emplace(community_account, [&](auto &row) {
+            _amend_vote_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = new_codes->code_id;
                 row.right_proposer = co_amend_code_collective_decision->right_proposer;
                 row.right_approver = co_amend_code_collective_decision->right_approver;
@@ -596,13 +643,16 @@ ACTION community::createcode(name community_account, name code_name, name contra
 ACTION community::setexectype(name community_account, uint64_t code_id, uint8_t exec_type, bool is_amend_code) {
     require_auth(community_account);
 
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     code_table _codes(_self, community_account.value);
 
     auto code_itr = _codes.find(code_id);
     check(code_itr != _codes.end(), "ERR::VERIFY_FAILED::Code does not exist.");
 
     if (!is_amend_code) {
-        _codes.modify(code_itr, community_account, [&](auto &row) {
+        _codes.modify(code_itr, ram_payer, [&](auto &row) {
             row.code_exec_type = exec_type;
         });
 
@@ -615,7 +665,7 @@ ACTION community::setexectype(name community_account, uint64_t code_id, uint8_t 
             }
         }
     } else {
-        _codes.modify(code_itr, community_account, [&](auto &row) {
+        _codes.modify(code_itr, ram_payer, [&](auto &row) {
             row.amendment_exec_type = exec_type;
         });
 
@@ -634,6 +684,9 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
 {
     require_auth(community_account);
 
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     code_table _codes(_self, community_account.value);
 
     auto code_itr = _codes.find(code_id);
@@ -647,11 +700,11 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
         auto amend_execution_rule_itr = _execution_rule.find(code_id);
 
         if (amend_execution_rule_itr != _execution_rule.end()) {
-            _execution_rule.modify(amend_execution_rule_itr, community_account, [&](auto &row) {
+            _execution_rule.modify(amend_execution_rule_itr, ram_payer, [&](auto &row) {
                     row.right_executor = right_sole_executor;
             });
         } else {
-            _execution_rule.emplace(community_account, [&](auto &row) {
+            _execution_rule.emplace(ram_payer, [&](auto &row) {
                     row.code_id = code_id;
                     row.right_executor = right_sole_executor;
             });
@@ -663,11 +716,11 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
         auto code_execution_rule_itr = _execution_rule.find(code_id);
 
         if (code_execution_rule_itr != _execution_rule.end()) {
-            _execution_rule.modify(code_execution_rule_itr, community_account, [&](auto &row) {
+            _execution_rule.modify(code_execution_rule_itr, ram_payer, [&](auto &row) {
                     row.right_executor = right_sole_executor;
             });
         } else {
-            _execution_rule.emplace(community_account, [&](auto &row) {
+            _execution_rule.emplace(ram_payer, [&](auto &row) {
                     row.code_id = code_id;
                     row.right_executor = right_sole_executor;
             });
@@ -678,6 +731,9 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
 ACTION community::setproposer(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_proposer)
 {
     require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     code_table _codes(_self, community_account.value);
 
@@ -694,11 +750,11 @@ ACTION community::setproposer(name community_account, uint64_t code_id, bool is_
         auto amend_vote_rule_itr = _amend_vote_rule.find(code_id);
 
         if (amend_vote_rule_itr != _amend_vote_rule.end()) {
-            _amend_vote_rule.modify(amend_vote_rule_itr, community_account, [&](auto &row) {
+            _amend_vote_rule.modify(amend_vote_rule_itr, ram_payer, [&](auto &row) {
                     row.right_proposer = right_proposer;
             });
         } else {
-            _amend_vote_rule.emplace(community_account, [&](auto &row) {
+            _amend_vote_rule.emplace(ram_payer, [&](auto &row) {
                     row.code_id = code_id;
                     row.right_proposer = right_proposer;
             });
@@ -711,11 +767,11 @@ ACTION community::setproposer(name community_account, uint64_t code_id, bool is_
         auto code_vote_rule_itr = _code_vote_rule.find(code_id);
 
         if (code_vote_rule_itr != _code_vote_rule.end()) {
-            _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
+            _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
                     row.right_proposer = right_proposer;
             });
         } else {
-            _code_vote_rule.emplace(community_account, [&](auto &row) {
+            _code_vote_rule.emplace(ram_payer, [&](auto &row) {
                     row.code_id = code_id;
                     row.right_proposer = right_proposer;
             });
@@ -723,8 +779,12 @@ ACTION community::setproposer(name community_account, uint64_t code_id, bool is_
     }
 }
 
-ACTION community::setapprotype(name community_account, uint64_t code_id, bool is_amend_code, uint8_t approval_type) {
+ACTION community::setapprotype(name community_account, uint64_t code_id, bool is_amend_code, uint8_t approval_type)
+{
     require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     code_table _codes(_self, community_account.value);
 
@@ -739,11 +799,11 @@ ACTION community::setapprotype(name community_account, uint64_t code_id, bool is
         auto amend_vote_rule_itr = _amend_vote_rule.find(code_id);
 
         if (amend_vote_rule_itr != _amend_vote_rule.end()) {
-            _amend_vote_rule.modify(amend_vote_rule_itr, community_account, [&](auto &row) {
+            _amend_vote_rule.modify(amend_vote_rule_itr, ram_payer, [&](auto &row) {
                     row.approval_type = approval_type;
             });
         } else {
-            _amend_vote_rule.emplace(community_account, [&](auto &row) {
+            _amend_vote_rule.emplace(ram_payer, [&](auto &row) {
                     row.code_id = code_id;
                     row.approval_type = approval_type;
             });
@@ -756,11 +816,11 @@ ACTION community::setapprotype(name community_account, uint64_t code_id, bool is
         auto code_vote_rule_itr = _code_vote_rule.find(code_id);
 
         if (code_vote_rule_itr != _code_vote_rule.end()) {
-            _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
+            _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
                     row.approval_type = approval_type;
             });
         } else {
-            _code_vote_rule.emplace(community_account, [&](auto &row) {
+            _code_vote_rule.emplace(ram_payer, [&](auto &row) {
                     row.code_id = code_id;
                     row.approval_type = approval_type;
             });
@@ -771,6 +831,9 @@ ACTION community::setapprotype(name community_account, uint64_t code_id, bool is
 ACTION community::setapprover(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_approver) 
 {
     require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     code_table _codes(_self, community_account.value);
 
@@ -789,7 +852,7 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
         check(amend_vote_rule_itr != _amend_vote_rule.end(), "ERR::APPROVAL_TYPE_NOT_SET::Please use action setapprotype set approval type for this code first");
         check(amend_vote_rule_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS, "ERR::SET_APPROVER_FOR_CONSENSUS::Can not set approver for approval consensus code");
 
-        _amend_vote_rule.modify(amend_vote_rule_itr, community_account, [&](auto &row) {
+        _amend_vote_rule.modify(amend_vote_rule_itr, ram_payer, [&](auto &row) {
                 row.right_approver = right_approver;
         });
     } else {
@@ -802,7 +865,7 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
         check(code_vote_rule_itr != _code_vote_rule.end(), "ERR::APPROVAL_TYPE_NOT_SET::Please use action setapprotype set approval type for this code first");
         check(code_vote_rule_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS, "ERR::SET_APPROVER_FOR_CONSENSUS::Can not set approver for approval consensus code");
 
-        _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
+        _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
                 row.right_approver = right_approver;
         });
     }
@@ -811,6 +874,9 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
 ACTION community::setvoter(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_voter)
 {
     require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     code_table _codes(_self, community_account.value);
 
@@ -829,7 +895,7 @@ ACTION community::setvoter(name community_account, uint64_t code_id, bool is_ame
         check(amend_vote_rule_itr != _amend_vote_rule.end(), "ERR::APPROVAL_TYPE_NOT_SET::Please use action setapprotype set approval type for this code first");
         check(amend_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::SET_APPROVER_FOR_CONSENSUS::Can not set voter for sole approval code");
 
-        _amend_vote_rule.modify(amend_vote_rule_itr, community_account, [&](auto &row) {
+        _amend_vote_rule.modify(amend_vote_rule_itr, ram_payer, [&](auto &row) {
                 row.right_voter = right_voter;
         });
     } else {
@@ -842,14 +908,18 @@ ACTION community::setvoter(name community_account, uint64_t code_id, bool is_ame
         check(code_vote_rule_itr != _code_vote_rule.end(), "ERR::APPROVAL_TYPE_NOT_SET::Please use action setapprotype set approval type for this code first");
         check(code_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::SET_APPROVER_FOR_CONSENSUS::Can not set voter for sole approval code");
 
-        _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
+        _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
                 row.right_voter = right_voter;
         });
     }
 }
 
-ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_amend_code, double pass_rule, uint64_t vote_duration) {
+ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_amend_code, double pass_rule, uint64_t vote_duration) 
+{
     require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     code_table _codes(_self, community_account.value);
 
@@ -867,7 +937,7 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
         check(amend_vote_rule_itr != _amend_vote_rule.end(), "ERR::VERIFY_FAILED::Please initialize approval type first");
         // check(amend_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::VERIFY_FAILED::Can not set voter for sole approval code");
 
-        _amend_vote_rule.modify(amend_vote_rule_itr, community_account, [&](auto &row) {
+        _amend_vote_rule.modify(amend_vote_rule_itr, ram_payer, [&](auto &row) {
                 row.vote_duration = vote_duration;
                 row.pass_rule = pass_rule;
         });
@@ -880,7 +950,7 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
         check(code_vote_rule_itr != _code_vote_rule.end(), "ERR::VERIFY_FAILED::Please initialize approval type first");
         // check(code_vote_rule_itr->approval_type != ApprovalType::SOLE_APPROVAL, "ERR::VERIFY_FAILED::Can not set voter for sole approval code");
 
-        _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
+        _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
                 row.vote_duration = vote_duration;
                 row.pass_rule = pass_rule;
         });
@@ -890,6 +960,9 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
 ACTION community::voteforcode(name community_account, name proposal_name, name approver, bool vote_status)
 {
     require_auth(approver);
+    
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     code_proposals_table _proposals(_self, community_account.value);
     auto proposal_itr = _proposals.find(proposal_name.value);
@@ -912,7 +985,7 @@ ACTION community::voteforcode(name community_account, name proposal_name, name a
             check(collective_exec_itr->vote_duration + proposal_itr->propose_time.sec_since_epoch() > current_time_point().sec_since_epoch(), "ERR::VOTING_ENDED::Voting for this proposal has ben ended");
 
             if (collective_exec_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS && verify_approver(community_account, approver, proposal_itr->code_id, amend_action)) {
-                call_action(community_account, code_itr->contract_name, action.code_action, action.packed_params);
+                call_action(community_account, ram_payer, code_itr->contract_name, action.code_action, action.packed_params);
                 is_executed = true;
             } else {
                 check(verify_voter(community_account, approver, proposal_itr->code_id, amend_action), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
@@ -925,7 +998,7 @@ ACTION community::voteforcode(name community_account, name proposal_name, name a
             check(collective_exec_itr->vote_duration + proposal_itr->propose_time.sec_since_epoch() > current_time_point().sec_since_epoch(), "ERR::VOTING_ENDED::Voting for this proposal has ben ended");
 
             if (collective_exec_itr->approval_type != ApprovalType::APPROVAL_CONSENSUS && verify_approver(community_account, approver, proposal_itr->code_id, amend_action)) {
-                call_action(community_account, code_itr->contract_name, action.code_action, action.packed_params);
+                call_action(community_account, ram_payer, code_itr->contract_name, action.code_action, action.packed_params);
                 is_executed = true;
             } else {
                 check(verify_voter(community_account, approver, proposal_itr->code_id, amend_action), "ERR::VERIFY_FAILED::You do not have permission to vote for this action.");
@@ -972,6 +1045,9 @@ ACTION community::createpos(
 ) {
     require_auth(community_account);
 
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     check(pos_name.length() > 3, "ERR::CREATEPROP_SHORT_TITLE::Name length is too short.");
     check(max_holder > 0, "ERR::MAXHOLDER_INVALID::Max holder should be a positive value.");
     check(filled_through == FillingType::APPOINTMENT || filled_through == FillingType::ELECTION, "ERR::FILLEDTHROUGH_INVALID::Filled through should be 0 or 1.");
@@ -998,7 +1074,7 @@ ACTION community::createpos(
     code_actions.push_back("configpos"_n);
 
     // TO DO: create configpos with creator (exec_type = SOLE_DESICION) for code_execution_right amendment_execution_right
-    auto configCode = _codes.emplace(community_account, [&](auto &row) {
+    auto configCode = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = PO_Config;
         row.contract_name = get_self();
@@ -1008,12 +1084,12 @@ ACTION community::createpos(
         row.code_type = {CodeTypeEnum::POSITION, newPositionId};
     });
 
-    _code_execution_rule.emplace(community_account, [&](auto &row) {
+    _code_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = configCode->code_id;
             row.right_executor = _init_right_holder;
     });
 
-    _amend_execution_rule.emplace(community_account, [&](auto &row) {
+    _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = configCode->code_id;
             row.right_executor = _init_right_holder;
     });
@@ -1021,7 +1097,7 @@ ACTION community::createpos(
     code_actions.clear();
     code_actions.push_back("appointpos"_n);
 
-    auto appointCode = _codes.emplace(community_account, [&](auto &row) {
+    auto appointCode = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = PO_Appoint;
         row.contract_name = get_self();
@@ -1031,12 +1107,12 @@ ACTION community::createpos(
         row.code_type = {CodeTypeEnum::POSITION, newPositionId};
     });
 
-    _code_execution_rule.emplace(community_account, [&](auto &row) {
+    _code_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = appointCode->code_id;
             row.right_executor = _init_right_holder;
     });
 
-    _amend_execution_rule.emplace(community_account, [&](auto &row) {
+    _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = appointCode->code_id;
             row.right_executor = _init_right_holder;
     });
@@ -1044,7 +1120,7 @@ ACTION community::createpos(
     code_actions.clear();
     code_actions.push_back("dismisspos"_n);
 
-    auto dismissCode = _codes.emplace(community_account, [&](auto &row) {
+    auto dismissCode = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = PO_Dismiss;
         row.contract_name = get_self();
@@ -1054,12 +1130,12 @@ ACTION community::createpos(
         row.code_type = {CodeTypeEnum::POSITION, newPositionId};
     });
 
-    _code_execution_rule.emplace(community_account, [&](auto &row) {
+    _code_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = dismissCode->code_id;
             row.right_executor = _init_right_holder;
     });
 
-    _amend_execution_rule.emplace(community_account, [&](auto &row) {
+    _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = dismissCode->code_id;
             row.right_executor = _init_right_holder;
     });
@@ -1069,14 +1145,14 @@ ACTION community::createpos(
         {PO_Appoint, appointCode->code_id},
         {PO_Dismiss, dismissCode->code_id}};
 
-    auto newPosition = _positions.emplace(community_account, [&](auto &row) {
+    auto newPosition = _positions.emplace(ram_payer, [&](auto &row) {
         row.pos_id = _positions.available_primary_key();
         row.pos_name = pos_name;
         row.refer_codes = refer_codes;
     });
 
     action(
-        permission_level{community_account, "active"_n},
+        permission_level{ram_payer, "active"_n},
         get_self(),
         "configpos"_n,
         std::make_tuple(community_account, newPosition->pos_id, pos_name, max_holder, filled_through, term, next_term_start_at, voting_period, right_candidate, right_voter))
@@ -1086,6 +1162,9 @@ ACTION community::createpos(
 ACTION community::initadminpos(name community_account, name creator)
 {
     require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     code_table _codes(_self, community_account.value);
     position_table _positions(_self, community_account.value);
@@ -1112,7 +1191,7 @@ ACTION community::initadminpos(name community_account, name creator)
     code_actions.push_back("configpos"_n);
 
     // TO DO: create configpos with creator (exec_type = SOLE_DESICION) for code_execution_right amendment_execution_right
-    auto configCode = _codes.emplace(community_account, [&](auto &row) {
+    auto configCode = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = PO_Config;
         row.contract_name = get_self();
@@ -1122,12 +1201,12 @@ ACTION community::initadminpos(name community_account, name creator)
         row.code_type = {CodeTypeEnum::POSITION, newPositionId};
     });
 
-    _code_execution_rule.emplace(community_account, [&](auto &row) {
+    _code_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = configCode->code_id;
             row.right_executor = _init_right_holder;
     });
 
-    _amend_execution_rule.emplace(community_account, [&](auto &row) {
+    _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = configCode->code_id;
             row.right_executor = _init_right_holder;
     });
@@ -1135,7 +1214,7 @@ ACTION community::initadminpos(name community_account, name creator)
     code_actions.clear();
     code_actions.push_back("appointpos"_n);
 
-    auto appointCode = _codes.emplace(community_account, [&](auto &row) {
+    auto appointCode = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = PO_Appoint;
         row.contract_name = get_self();
@@ -1145,12 +1224,12 @@ ACTION community::initadminpos(name community_account, name creator)
         row.code_type = {CodeTypeEnum::POSITION, newPositionId};
     });
 
-    _code_execution_rule.emplace(community_account, [&](auto &row) {
+    _code_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = appointCode->code_id;
             row.right_executor = _init_right_holder;
     });
 
-    _amend_execution_rule.emplace(community_account, [&](auto &row) {
+    _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = appointCode->code_id;
             row.right_executor = _init_right_holder;
     });
@@ -1158,7 +1237,7 @@ ACTION community::initadminpos(name community_account, name creator)
     code_actions.clear();
     code_actions.push_back("dismisspos"_n);
 
-    auto dismissCode = _codes.emplace(community_account, [&](auto &row) {
+    auto dismissCode = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = PO_Dismiss;
         row.contract_name = get_self();
@@ -1168,12 +1247,12 @@ ACTION community::initadminpos(name community_account, name creator)
         row.code_type = {CodeTypeEnum::POSITION, newPositionId};
     });
 
-    _code_execution_rule.emplace(community_account, [&](auto &row) {
+    _code_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = dismissCode->code_id;
             row.right_executor = _init_right_holder;
     });
 
-    _amend_execution_rule.emplace(community_account, [&](auto &row) {
+    _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = dismissCode->code_id;
             row.right_executor = _init_right_holder;
     });
@@ -1183,7 +1262,7 @@ ACTION community::initadminpos(name community_account, name creator)
         {PO_Appoint, appointCode->code_id},
         {PO_Dismiss, dismissCode->code_id}};
 
-    _positions.emplace(community_account, [&](auto &row) {
+    _positions.emplace(ram_payer, [&](auto &row) {
         row.pos_id = newPositionId;
         row.pos_name = default_admin_position_name;
         row.max_holder = default_admin_position_max_holder;
@@ -1207,6 +1286,9 @@ ACTION community::configpos(
 ) {
     require_auth(community_account);
 
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     check(pos_name.length() > 3, "ERR::CREATEPROP_SHORT_TITLE::Name length is too short.");
     check(max_holder > 0, "ERR::MAXHOLDER_INVALID::Max holder should be a positive value.");
     check(filled_through == FillingType::APPOINTMENT || filled_through == FillingType::ELECTION, "ERR::FILLEDTHROUGH_INVALID::Filled through should be 0 or 1.");
@@ -1215,7 +1297,7 @@ ACTION community::configpos(
     auto pos_itr = _positions.find(pos_id);
     check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::Position id doesn't exist.");
 
-    _positions.modify(pos_itr, community_account, [&](auto &row) {
+    _positions.modify(pos_itr, ram_payer, [&](auto &row) {
         row.pos_name = pos_name;
         row.max_holder = max_holder;
         row.fulfillment_type = filled_through;
@@ -1235,7 +1317,7 @@ ACTION community::configpos(
 
         if (election_rule_itr == _electionrule.end())
         {
-            _electionrule.emplace(community_account, [&](auto &row) {
+            _electionrule.emplace(ram_payer, [&](auto &row) {
                 row.pos_id = pos_id;
                 row.term = term;
                 row.next_term_start_at = time_point_sec(next_term_start_at);
@@ -1246,7 +1328,7 @@ ACTION community::configpos(
         }
         else
         {
-            _electionrule.modify(election_rule_itr, community_account, [&](auto &row) {
+            _electionrule.modify(election_rule_itr, ram_payer, [&](auto &row) {
                 row.term = term;
                 row.next_term_start_at = time_point_sec(next_term_start_at);
                 row.voting_period = voting_period;
@@ -1259,20 +1341,24 @@ ACTION community::configpos(
         auto posproposal_itr = _pos_proposal.find(pos_id);
 
         if (posproposal_itr == _pos_proposal.end()) {
-            _pos_proposal.emplace(community_account, [&](auto &row) {
+            _pos_proposal.emplace(ram_payer, [&](auto &row) {
                 row.pos_id = pos_id;
                 row.pos_proposal_id = get_pos_proposed_id();
                 row.pos_proposal_status = ProposalStatus::IN_PROGRESS;
             });
         } else {
-            _pos_proposal.modify(posproposal_itr, community_account, [&](auto &row) {
+            _pos_proposal.modify(posproposal_itr, ram_payer, [&](auto &row) {
                 row.pos_proposal_status = ProposalStatus::IN_PROGRESS;
             });
         }
 
         cancel_deferred(pos_id);
         eosio::transaction auto_execute;
-        auto_execute.actions.emplace_back(eosio::permission_level{community_account, "active"_n}, _self, "approvepos"_n, std::make_tuple(community_account, pos_id));
+        if(ram_payer == ram_payer_system){
+            auto_execute.actions.emplace_back(vector<eosio::permission_level>{{community_account, "active"_n}, {ram_payer_system, "active"_n}}, _self, "approvepos"_n, std::make_tuple(community_account, pos_id));
+        }else{
+            auto_execute.actions.emplace_back(eosio::permission_level{community_account, "active"_n}, _self, "approvepos"_n, std::make_tuple(community_account, pos_id));
+        }
         auto_execute.delay_sec = votting_end_date - current_time_point().sec_since_epoch();
         auto_execute.send(pos_id, _self, true);
     }
@@ -1282,6 +1368,9 @@ ACTION community::appointpos(name community_account, uint64_t pos_id, vector<nam
 {
     require_auth(community_account);
 
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     position_table _positions(_self, community_account.value);
     auto pos_itr = _positions.find(pos_id);
     check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::Position id doesn't exist.");
@@ -1289,7 +1378,7 @@ ACTION community::appointpos(name community_account, uint64_t pos_id, vector<nam
     check(pos_itr->max_holder >= pos_itr->holders.size() + holder_accounts.size(), "ERR::VERIFY_FAILED::The holder accounts exceed the maximum number.");
 
     holder_accounts.insert(holder_accounts.end(), pos_itr->holders.begin(), pos_itr->holders.end());
-    _positions.modify(pos_itr, community_account, [&](auto &row) {
+    _positions.modify(pos_itr, ram_payer, [&](auto &row) {
         row.holders = holder_accounts;
     });
 }
@@ -1298,6 +1387,9 @@ ACTION community::nominatepos(name community_account, uint64_t pos_id, name owne
 {
     require_auth(owner);
 
+    auto ram_payer = owner;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+    
     position_table _positions(_self, community_account.value);
     auto pos_itr = _positions.find(pos_id);
     check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::Position id doesn't exist.");
@@ -1320,7 +1412,7 @@ ACTION community::nominatepos(name community_account, uint64_t pos_id, name owne
     auto candidate_itr = _poscandidate.find(owner.value);
     check(candidate_itr == _poscandidate.end(), "ERR::CANDIDATE_EXIST::The candidate already exist");
 
-    _poscandidate.emplace(owner, [&](auto &row) {
+    _poscandidate.emplace(ram_payer, [&](auto &row) {
         row.cadidate = owner;
         row.voted_percent = 0;
     });
@@ -1329,6 +1421,9 @@ ACTION community::nominatepos(name community_account, uint64_t pos_id, name owne
 ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter, name candidate, bool vote_status)
 {
     require_auth(voter);
+
+    auto ram_payer = voter;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     position_table _positions(_self, community_account.value);
     auto pos_itr = _positions.find(pos_id);
@@ -1373,7 +1468,7 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
         new_voters_detail[voter] = vote_status;
     }
 
-    _pos_candidate.modify(candidate_itr, voter, [&](auto &row) {
+    _pos_candidate.modify(candidate_itr, ram_payer, [&](auto &row) {
         row.voted_percent = voted_percent;
         row.voters_detail = new_voters_detail;
     });
@@ -1382,6 +1477,9 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
 ACTION community::approvepos(name community_account, uint64_t pos_id)
 {
     require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     position_table _positions(_self, community_account.value);
     auto pos_itr = _positions.find(pos_id);
@@ -1422,12 +1520,12 @@ ACTION community::approvepos(name community_account, uint64_t pos_id)
     /// sort by candidate name
     std::sort(top_candidates.begin(), top_candidates.end());
 
-    _pos_proposal.modify(posproposal_itr, community_account, [&](auto &row) {
+    _pos_proposal.modify(posproposal_itr, ram_payer, [&](auto &row) {
         row.pos_proposal_status = ProposalStatus::PROPOSAL_APPROVE;
         row.approved_at = current_time_point();
     });
 
-    _positions.modify(pos_itr, community_account, [&](auto &row) {
+    _positions.modify(pos_itr, ram_payer, [&](auto &row) {
         row.holders = top_candidates;
     });
 }
@@ -1435,6 +1533,9 @@ ACTION community::approvepos(name community_account, uint64_t pos_id)
 ACTION community::dismisspos(name community_account, uint64_t pos_id, name holder, const string &dismissal_reason)
 {
     require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     position_table _positions(_self, community_account.value);
     auto pos_itr = _positions.find(pos_id);
@@ -1444,7 +1545,7 @@ ACTION community::dismisspos(name community_account, uint64_t pos_id, name holde
     auto _holders = pos_itr->holders;
     _holders.erase(std::find(_holders.begin(), _holders.end(), holder));
 
-    _positions.modify(pos_itr, community_account, [&](auto &row) {
+    _positions.modify(pos_itr, ram_payer, [&](auto &row) {
         row.holders = _holders;
     });
 }
@@ -1463,7 +1564,13 @@ ACTION community::createbadge(
         double issue_pass_rule,
         uint64_t issue_vote_duration
 ) {
+    require_auth(community_account);
+
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     // Todo: Verify badge param:
+
     action(
         permission_level{community_account, "active"_n},
         "eosio.msig"_n,
@@ -1504,7 +1611,7 @@ ACTION community::createbadge(
     }
 
     // save new code to the table
-    auto issue_badge_code = _codes.emplace(community_account, [&](auto &row) {
+    auto issue_badge_code = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = issue_badge_code_name;
         row.contract_name = get_self();
@@ -1515,7 +1622,7 @@ ACTION community::createbadge(
 
     if (issue_exec_type != ExecutionType::COLLECTIVE_DECISION) {
         verify_right_holder_input(community_account, right_issue_sole_executor);
-        _code_execution_rule.emplace(community_account, [&](auto &row) {
+        _code_execution_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = issue_badge_code->code_id;
             row.right_executor = right_issue_sole_executor;
         });
@@ -1525,7 +1632,7 @@ ACTION community::createbadge(
         verify_right_holder_input(community_account, right_issue_proposer);
         verify_right_holder_input(community_account, right_issue_approver);
         verify_right_holder_input(community_account, right_issue_voter);
-        _code_vote_rule.emplace(community_account, [&](auto &row) {
+        _code_vote_rule.emplace(ram_payer, [&](auto &row) {
             row.code_id = issue_badge_code->code_id;
             row.right_proposer = right_issue_proposer;
             row.right_approver = right_issue_approver;
@@ -1540,7 +1647,7 @@ ACTION community::createbadge(
     code_actions.push_back("configbadge"_n);
 
     // save new code to the table
-    auto config_badge_code = _codes.emplace(community_account, [&](auto &row) {
+    auto config_badge_code = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = BA_Config;
         row.contract_name = get_self();
@@ -1552,12 +1659,12 @@ ACTION community::createbadge(
     if (ba_create_code->code_exec_type != ExecutionType::COLLECTIVE_DECISION) {
         auto ba_create_code_sole_decision = _code_execution_rule.find(ba_create_code->code_id);
         if(ba_create_code_sole_decision != _code_execution_rule.end()) {
-            _amend_execution_rule.emplace(community_account, [&](auto &row) {
+            _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = config_badge_code->code_id;
                 row.right_executor = ba_create_code_sole_decision->right_executor;
             });
 
-            _code_execution_rule.emplace(community_account, [&](auto &row) {
+            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = config_badge_code->code_id;
                 row.right_executor = ba_create_code_sole_decision->right_executor;
             });
@@ -1567,7 +1674,7 @@ ACTION community::createbadge(
     if (ba_create_code->code_exec_type != ExecutionType::SOLE_DECISION) {
         auto ba_create_code_collective_decision = _code_vote_rule.find(ba_create_code->code_id);
         if (ba_create_code_collective_decision != _code_vote_rule.end()) {
-            _amend_vote_rule.emplace(community_account, [&](auto &row) {
+            _amend_vote_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = config_badge_code->code_id;
                 row.right_proposer = ba_create_code_collective_decision->right_proposer;
                 row.right_approver = ba_create_code_collective_decision->right_approver;
@@ -1577,7 +1684,7 @@ ACTION community::createbadge(
                 row.vote_duration = ba_create_code_collective_decision->vote_duration;
             });
 
-            _code_vote_rule.emplace(community_account, [&](auto &row) {
+            _code_vote_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = config_badge_code->code_id;
                 row.right_proposer = ba_create_code_collective_decision->right_proposer;
                 row.right_approver = ba_create_code_collective_decision->right_approver;
@@ -1604,6 +1711,11 @@ ACTION community::configbadge(
         double issue_pass_rule,
         uint64_t issue_vote_duration
 ) {
+    require_auth(community_account);
+    
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     if (update_badge_proposal_name != name("")) {
         // Todo: Verify badge param:
         action(
@@ -1656,7 +1768,7 @@ ACTION community::configbadge(
     if (issue_badge_code_itr == getByCodeReferId.end()) {
         vector<name> code_actions;
         code_actions.push_back("issuebadge"_n);
-        _codes.emplace(community_account, [&](auto &row) {
+        _codes.emplace(ram_payer, [&](auto &row) {
             row.code_id = _codes.available_primary_key();
             row.code_name = issue_badge_code_name;
             row.contract_name = get_self();
@@ -1665,7 +1777,7 @@ ACTION community::configbadge(
             row.code_type = {CodeTypeEnum::BADGE, badge_id};
         });
     } else {
-        getByCodeReferId.modify(issue_badge_code_itr, community_account, [&](auto &row) {
+        getByCodeReferId.modify(issue_badge_code_itr, ram_payer, [&](auto &row) {
             row.code_name = issue_badge_code_name;
             row.code_exec_type = issue_exec_type;
             row.code_type = {CodeTypeEnum::BADGE, badge_id};
@@ -1676,12 +1788,12 @@ ACTION community::configbadge(
         verify_right_holder_input(community_account, right_issue_sole_executor);
         auto code_exec_type_itr = _code_execution_rule.find(issue_badge_code_itr->code_id);
         if (code_exec_type_itr == _code_execution_rule.end()) {
-            _code_execution_rule.emplace(community_account, [&](auto &row) {
+            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = issue_badge_code_itr->code_id;
                 row.right_executor = right_issue_sole_executor;
             });
         } else {
-            _code_execution_rule.modify(code_exec_type_itr, community_account, [&](auto &row) {
+            _code_execution_rule.modify(code_exec_type_itr, ram_payer, [&](auto &row) {
                 row.right_executor = right_issue_sole_executor;
             });
         }
@@ -1693,7 +1805,7 @@ ACTION community::configbadge(
         verify_right_holder_input(community_account, right_issue_voter);
         auto code_vote_rule_itr = _code_vote_rule.find(issue_badge_code_itr->code_id);
         if (code_vote_rule_itr == _code_vote_rule.end()) {
-            _code_vote_rule.emplace(community_account, [&](auto &row) {
+            _code_vote_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = issue_badge_code_itr->code_id;
                 row.right_proposer = right_issue_proposer;
                 row.right_approver = right_issue_approver;
@@ -1703,7 +1815,7 @@ ACTION community::configbadge(
                 row.vote_duration = issue_vote_duration;
             });
         } else {
-            _code_vote_rule.modify(code_vote_rule_itr, community_account, [&](auto &row) {
+            _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
                 row.right_proposer = right_issue_proposer;
                 row.right_approver = right_issue_approver;
                 row.right_voter = right_issue_voter;
@@ -1717,6 +1829,11 @@ ACTION community::configbadge(
 
 ACTION community::issuebadge(name community_account, name badge_propose_name)
 {
+    require_auth(community_account);
+    
+    auto ram_payer = community_account;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
+
     // Todo: Verify ceritification param:
     action(
         permission_level{community_account, "active"_n},
@@ -1879,9 +1996,10 @@ bool community::verify_account_right_holder(name community_account, RightHolder 
         return true;
     }
 
-    // TODO verify account is community member
     if (right_holder.is_any_community_member) {
-        return true;
+        members_table _members(_self, community_account.value);
+        auto mem_itr = _members.find(owner.value);
+        if(mem_itr != _members.end()) return true;
     }
 
     // TODO verify account right exp
@@ -1979,6 +2097,16 @@ uint64_t community::get_pos_proposed_id()
 
     config.set(_cstate, _self);
     return _cstate.posproposed_id;
+}
+
+void community::call_action(name community_account, name ram_payer, name contract_name, name action_name, vector<char> packed_params) {
+    action sending_action;
+    sending_action.authorization.push_back(permission_level{community_account, "active"_n});
+    if(ram_payer == ram_payer_system) sending_action.authorization.push_back(permission_level{ram_payer_system, "active"_n});
+    sending_action.account = contract_name;
+    sending_action.name = action_name;
+    sending_action.data = packed_params;
+    sending_action.send();
 }
 
 asset community::convertbytes2cat(uint32_t bytes)
