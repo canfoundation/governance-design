@@ -32,6 +32,7 @@ const uint64_t default_admin_position_max_holder = 10;
 // list of codes
 const name CO_Access = "co.access"_n;
 const name CO_Amend = "co.amend"_n;
+const name CO_InputMem = "co.members"_n;
 
 const name PO_Create = "po.create"_n;
 const name PO_Config = "po.config"_n;
@@ -197,8 +198,8 @@ ACTION community::initcode(name community_account, name creator, bool create_def
     
     code_table _codes(_self, community_account.value);
 
-    auto code_itr = _codes.find(CO_Amend.value);
-    check(code_itr == _codes.end(), "ERR::VERIFY_FAILED::Code already initialize.");
+    auto getByCodeId = _codes.get_index<"by.code.name"_n>();
+    check(getByCodeId.find(CO_Amend.value) == getByCodeId.end(), "ERR::VERIFY_FAILED::Code already initialize.");
 
     code_sole_decision_table _code_execution_rule(_self, community_account.value);
     amend_sole_decision_table _amend_execution_rule(_self, community_account.value);
@@ -242,7 +243,33 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
     if (create_default_code)
     {
-        auto getByCodeId = _codes.get_index<"by.code.name"_n>();
+        // create inputmembers code
+        if (getByCodeId.find(CO_InputMem.value) == getByCodeId.end())
+        {
+            _init_actions.clear();
+            _init_actions.push_back("inputmembers"_n);
+            // initialize createcode code
+            auto co_inputmem_code = _codes.emplace(ram_payer, [&](auto &row) {
+                row.code_id = _codes.available_primary_key();
+                row.code_name = CO_InputMem;
+                row.contract_name = get_self();
+                row.code_actions = _init_actions;
+                row.code_exec_type = ExecutionType::SOLE_DECISION;
+                row.amendment_exec_type = ExecutionType::SOLE_DECISION;
+                row.code_type = {NORMAL, 0};
+            });
+
+            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
+                    row.code_id = co_inputmem_code->code_id;
+                    row.right_executor = _init_right_holder;
+            });
+
+            _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
+                    row.code_id = co_inputmem_code->code_id;
+                    row.right_executor = _init_right_holder;
+            });
+        }
+
         if (getByCodeId.find(PO_Create.value) == getByCodeId.end())
         {
             _init_actions.clear();
