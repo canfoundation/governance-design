@@ -618,6 +618,8 @@ cleos -u http://18.182.95.163:8888 set account permission governance23 active '{
 ````bash
 cleos -u http://18.182.95.163:8888 transfer quocleplayer governance23 "10.0000 CAT" "community232" -p quocleplayer
 
+# allow 3rd party pay CAT in creating community account instead of community creator
+cleos -u http://18.182.95.163:8888 transfer quyvoplayer governance23 "10.0000 CAT" "community232-quocleplayer" -p quyvoplayer
 
 $ cleos -u http://18.182.95.163:8888 get account community225
 created: 2019-11-29T10:43:04.500

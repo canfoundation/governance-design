@@ -58,7 +58,19 @@ void community::transfer(name from, name to, asset quantity, string memo)
     check(quantity.amount > 0, "ERR::VERIFY_FAILED::only positive quantity allowed");
     check(quantity.amount > 0, "ERR::VERIFY_FAILED::must transfer positive quantity");
     check(get_balance("eosio.token"_n, get_self(), CORE_SYMBOL.code()) >= min_active_contract, "ERR::VERIFY_FAILED::Deposit at least 10 CAT to active creating commnity feature");
-    string community_str = memo.c_str();
+
+    const std::size_t first_break = memo.find("-");
+    std::string community_str = memo.substr(0, first_break);
+
+    name community_creator = from;
+    if (first_break != std::string::npos){
+        std::string creator_str = memo.substr(first_break+1);
+        const eosio::name creator_name = eosio::name{creator_str};
+        if (creator_name != _self && creator_name != from && is_account(creator_name))
+        {
+            community_creator = creator_name;
+        }
+    }
     if ( quantity.symbol == CORE_SYMBOL && community_str != "deposit_core_symbol" )
     {
         name community_acc = name{community_str};
@@ -83,7 +95,7 @@ void community::transfer(name from, name to, asset quantity, string memo)
             permission_level{_self, "active"_n},
             get_self(),
             "createacc"_n,
-            std::make_tuple(from, community_acc))
+            std::make_tuple(community_creator, community_acc))
             .send();
     }
 }
