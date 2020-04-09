@@ -767,6 +767,56 @@ $ cleos get table governance23 community241 codeexecrule
 }
 ````
 
+### set who is community members
+1. pack action data of `inputmembers` action
+```bash
+cleos convert pack_action_data governance inputmembers '["community111",  ["quocle", "can"], ["eosio"]]'                                            
+00004020a888a8b603000000000000a6410000000000ea305500000000a888a8b6010000000000ea3055
+```
+2. get id of `co.access` code
+```bash
+cleos get table governance community111 codes --index 2 --key-type i64 -L co.access -U co.access
+{
+  "rows": [{
+      "code_id": 1,
+      "code_name": "co.members",
+      "contract_name": "governance33",
+      "code_actions": [
+        "inputmembers"
+      ],
+      "code_exec_type": 0,
+      "amendment_exec_type": 0,
+      "code_type": {
+        "type": 0,
+        "refer_id": 0
+      }
+    }
+  ],
+  "more": false,
+  "next_key": ""
+}
+```
+
+3. execute `inputmembers` action of `co.members` code:
+```bash
+cleos push action governance execcode '["community111", "sally", 1, [["inputmembers", "00004020a888a8b603000000000000a6410000000000ea305500000000a888a8b6010000000000ea3055"]]]' -p quocle
+```
+
+4. get table `members` to verify
+```bash
+cleos get table governance community111 members
+{
+  "rows": [{
+      "member": "can"
+    },{
+      "member": "eosio"
+    }
+  ],
+  "more": false,
+  "next_key": ""
+}
+```
+
 ### set who can access community
 1. pack action data of `setaccess` action
 ```bash

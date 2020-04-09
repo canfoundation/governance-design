@@ -2195,6 +2195,7 @@ EOSIO_ABI_CUSTOM(community,
 (createacc)
 (create)
 (initcode)
+(inputmembers)
 (initadminpos)
 (execcode)
 (createcode)
