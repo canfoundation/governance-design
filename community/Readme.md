@@ -775,9 +775,9 @@ $ cleos get table governance23 community241 codeexecrule
 cleos convert pack_action_data governance inputmembers '["community111",  ["quocle", "can"], ["eosio"]]'                                            
 00004020a888a8b603000000000000a6410000000000ea305500000000a888a8b6010000000000ea3055
 ```
-2. get id of `co.access` code
+2. get id of `co.members` code
 ```bash
-cleos get table governance community111 codes --index 2 --key-type i64 -L co.access -U co.access
+cleos get table governance community111 codes --index 2 --key-type i64 -L co.members -U co.members
 {
   "rows": [{
       "code_id": 1,
