@@ -3,7 +3,7 @@
 #include "exchange_state.cpp"
 #include <eosio/permission.hpp>
 
-const name ram_payer_system = "rampayer.can"_n;
+const name ram_payer_system = "ram.can"_n;
 
 const symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
 const symbol ram_symbol = symbol(symbol_code("RAM"), 0);
@@ -11,6 +11,7 @@ const symbol CORE_SYMBOL = symbol(symbol_code("CAT"), 4);
 const uint64_t init_ram_amount = 10 * 1024;
 const asset stake_net = asset(1'0000, CORE_SYMBOL);
 const asset stake_cpu = asset(1'0000, CORE_SYMBOL);
+const asset min_active_contract = asset(10'0000, CORE_SYMBOL);
 
 const name community_name_creator = "c"_n;
 const name cryptobadge_contract = "badge"_n;
@@ -56,7 +57,7 @@ void community::transfer(name from, name to, asset quantity, string memo)
     check(quantity.symbol.is_valid(), "ERR::VERIFY_FAILED::invalid quantity");
     check(quantity.amount > 0, "ERR::VERIFY_FAILED::only positive quantity allowed");
     check(quantity.amount > 0, "ERR::VERIFY_FAILED::must transfer positive quantity");
-
+    check(get_balance("eosio.token"_n, get_self(), CORE_SYMBOL.code()) >= min_active_contract, "ERR::VERIFY_FAILED::Deposit at least 10 CAT to active creating commnity feature");
     string community_str = memo.c_str();
     if ( quantity.symbol == CORE_SYMBOL && community_str != "deposit_core_symbol" )
     {
@@ -154,11 +155,14 @@ ACTION community::create(name creator, name community_account, string &community
     default_accession.right_access.is_any_community_member = true;
     default_accession.right_access.accounts = accession_account;
     accession_table _accession(_self, community_account.value);
-    _accession.set(default_accession, creator);
+    _accession.set(default_accession, ram_payer);
 
     // init template code
+
+    vector<eosio::permission_level> action_permission = {{community_account, "active"_n}};
+    if(ram_payer == ram_payer_system)  action_permission.push_back({ram_payer_system, "active"_n});
     action(
-        permission_level{community_account, "active"_n},
+        action_permission,
         get_self(),
         "initcode"_n,
         std::make_tuple(community_account, creator, create_default_code))
@@ -209,8 +213,11 @@ ACTION community::initcode(name community_account, name creator, bool create_def
     vector<name> _init_actions;
     _init_actions.push_back("createcode"_n);
 
+    vector<eosio::permission_level> action_permission = {{community_account, "active"_n}};
+    if(ram_payer == ram_payer_system)  action_permission.push_back({ram_payer_system, "active"_n});
+
     action(
-        permission_level{community_account, "active"_n},
+        action_permission,
         get_self(),
         "initadminpos"_n,
         std::make_tuple(community_account, creator))
@@ -1178,8 +1185,11 @@ ACTION community::createpos(
         row.refer_codes = refer_codes;
     });
 
+    vector<eosio::permission_level> action_permission = {{community_account, "active"_n}};
+    if(ram_payer == ram_payer_system)  action_permission.push_back({ram_payer_system, "active"_n});
+
     action(
-        permission_level{ram_payer, "active"_n},
+        action_permission,
         get_self(),
         "configpos"_n,
         std::make_tuple(community_account, newPosition->pos_id, pos_name, max_holder, filled_through, term, next_term_start_at, voting_period, right_candidate, right_voter))

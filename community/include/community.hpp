@@ -100,7 +100,15 @@ CONTRACT community : public contract
         uint64_t refer_id;
     };
 
+    static asset get_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+    {
+        accounts accountstable( token_contract_account, owner.value );
+        const auto& ac = accountstable.get( sym_code.raw() );
+        return ac.balance;
+    }
+
 public:
+
     struct RightHolder
     {
         bool is_anyone = false;
@@ -250,7 +258,7 @@ private:
     bool is_pos_voter(name community_account, uint64_t pos_id, name owner);
 
     uint64_t get_pos_proposed_id();
-    
+
     void call_action(name community_account, name ram_payer, name contract_name, name action_name, vector<char> packed_params);
 
     uint64_t getposid();
