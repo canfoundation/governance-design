@@ -2,20 +2,6 @@
 #include "../include/community.hpp"
 #include "exchange_state.cpp"
 #include <eosio/permission.hpp>
-
-const name ram_payer_system = "ram.can"_n;
-
-const symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
-const symbol ram_symbol = symbol(symbol_code("RAM"), 0);
-const symbol CORE_SYMBOL = symbol(symbol_code("CAT"), 4);
-const uint64_t init_ram_amount = 10 * 1024;
-const asset stake_net = asset(1'0000, CORE_SYMBOL);
-const asset stake_cpu = asset(1'0000, CORE_SYMBOL);
-const asset min_active_contract = asset(10'0000, CORE_SYMBOL);
-
-const name community_name_creator = "c"_n;
-const name cryptobadge_contract = "badge"_n;
-const name tiger_token_contract = "tiger.token"_n;
 const name set_execution_type_action = "setexectype"_n;
 const name set_sole_execution_right_holder_action = "setsoleexec"_n;
 const name set_approval_type_action = "setapprotype"_n;
@@ -29,6 +15,9 @@ const uint64_t seconds_per_day = 24 * 60 * 60;
 
 const string default_admin_position_name = "Admin";
 const uint64_t default_admin_position_max_holder = 10;
+
+const symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
+const symbol ram_symbol = symbol(symbol_code("RAM"), 0);
 
 // list of codes
 const name CO_Access = "co.access"_n;
@@ -84,11 +73,20 @@ void community::transfer(name from, name to, asset quantity, string memo)
     {
         return;
     }
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const symbol system_core_symbol = _config.core_symbol;
+    const uint64_t init_ram_amount = _config.init_ram_amount;
+    const asset min_active_contract = _config.min_active_contract;
+    const asset init_cpu = _config.init_cpu;
+    const asset init_net = _config.init_net;
+
     check(to == _self, "ERR::VERIFY_FAILED::contract is not involved in this transfer");
     check(quantity.symbol.is_valid(), "ERR::VERIFY_FAILED::invalid quantity");
     check(quantity.amount > 0, "ERR::VERIFY_FAILED::only positive quantity allowed");
     check(quantity.amount > 0, "ERR::VERIFY_FAILED::must transfer positive quantity");
-    check(get_balance("eosio.token"_n, get_self(), CORE_SYMBOL.code()) >= min_active_contract, "ERR::VERIFY_FAILED::Deposit at least 10 CAT to active creating commnity feature");
+    check(get_balance("eosio.token"_n, get_self(), system_core_symbol.code()) >= min_active_contract, "ERR::VERIFY_FAILED::Deposit at least 10 CAT to active creating commnity feature");
 
     const std::size_t first_break = memo.find("-");
     std::string community_str = memo.substr(0, first_break);
@@ -102,15 +100,16 @@ void community::transfer(name from, name to, asset quantity, string memo)
             community_creator = creator_name;
         }
     }
-    if ( quantity.symbol == CORE_SYMBOL && community_str != "deposit_core_symbol" )
+
+    if ( quantity.symbol == system_core_symbol && community_str != "deposit_core_symbol" )
     {
         name community_acc = name{community_str};
         check(verify_community_account_input(community_acc), "community account name is invalid");
         check(!is_account(community_acc), "ERR::VERIFY_FAILED::account already exist");
 
         const asset ram_fee = convertbytes2cat(init_ram_amount);
-        check(quantity >= stake_cpu + stake_net + ram_fee, "ERR::VERIFY_FAILED::insuffent balance to create new account");
-        const asset remain_balance = quantity - stake_cpu - stake_net - ram_fee;
+        check(quantity >= init_cpu + init_net + ram_fee, "ERR::VERIFY_FAILED::insuffent balance to create new account");
+        const asset remain_balance = quantity - init_cpu - init_net - ram_fee;
 
         if (remain_balance.amount > 0)
         {
@@ -148,11 +147,18 @@ ACTION community::createacc(name community_creator, name community_acc)
     authority owner_authority = {1, {}, {account_permission_level}, std::vector<wait_weight>()};
     authority active_authority = {1, {}, {account_permission_level}, std::vector<wait_weight>()};
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name community_creator_name = _config.community_creator_name;
+    const uint64_t init_ram_amount = _config.init_ram_amount;
+    const asset init_cpu = _config.init_cpu;
+    const asset init_net = _config.init_net;
+
     action(
-        permission_level{community_name_creator, "active"_n},
+        permission_level{community_creator_name, "active"_n},
         "eosio"_n,
         "newaccount"_n,
-        std::make_tuple(community_name_creator, community_acc, owner_authority, active_authority))
+        std::make_tuple(community_creator_name, community_acc, owner_authority, active_authority))
         .send();
 
     action(
@@ -166,13 +172,17 @@ ACTION community::createacc(name community_creator, name community_acc)
         permission_level{_self, "active"_n},
         "eosio"_n,
         "delegatebw"_n,
-        std::make_tuple(_self, community_acc, stake_net, stake_cpu, true))
+        std::make_tuple(_self, community_acc, init_net, init_cpu, true))
         .send();
 }
 
 ACTION community::create(name creator, name community_account, string &community_name, vector<uint64_t> member_badge, string &community_url, string &description, bool create_default_code)
 {
     require_auth(creator);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = creator;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -216,6 +226,10 @@ ACTION community::setaccess(name community_account, RightHolder right_access)
 {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -239,6 +253,10 @@ ACTION community::setaccess(name community_account, RightHolder right_access)
 ACTION community::initcode(name community_account, name creator, bool create_default_code)
 {
     require_auth(community_account);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -407,6 +425,10 @@ ACTION community::inputmembers(name community_account, vector<name> added_member
 {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -430,6 +452,10 @@ ACTION community::inputmembers(name community_account, vector<name> added_member
 ACTION community::execcode(name community_account, name exec_account, uint64_t code_id, vector<execution_code_data> code_actions)
 {
     require_auth(exec_account);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -477,6 +503,10 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
 ACTION community::proposecode(name community_account, name proposer, name proposal_name, uint64_t code_id, vector<execution_code_data> code_actions)
 {
     require_auth(proposer);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = proposer;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;    
@@ -545,6 +575,10 @@ ACTION community::proposecode(name community_account, name proposer, name propos
 
 ACTION community::execproposal(name community_account, name proposal_name)
 {
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -662,6 +696,10 @@ ACTION community::createcode(name community_account, name code_name, name contra
 {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -720,6 +758,10 @@ ACTION community::createcode(name community_account, name code_name, name contra
 ACTION community::setexectype(name community_account, uint64_t code_id, uint8_t exec_type, bool is_amend_code) {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -760,6 +802,10 @@ ACTION community::setexectype(name community_account, uint64_t code_id, uint8_t 
 ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_sole_executor)
 {
     require_auth(community_account);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -808,6 +854,10 @@ ACTION community::setsoleexec(name community_account, uint64_t code_id, bool is_
 ACTION community::setproposer(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_proposer)
 {
     require_auth(community_account);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -860,6 +910,10 @@ ACTION community::setapprotype(name community_account, uint64_t code_id, bool is
 {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -909,6 +963,10 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
 {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -951,6 +1009,10 @@ ACTION community::setapprover(name community_account, uint64_t code_id, bool is_
 ACTION community::setvoter(name community_account, uint64_t code_id, bool is_amend_code, RightHolder right_voter)
 {
     require_auth(community_account);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -995,6 +1057,10 @@ ACTION community::setvoterule(name community_account, uint64_t code_id, bool is_
 {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -1038,6 +1104,10 @@ ACTION community::voteforcode(name community_account, name proposal_name, name a
 {
     require_auth(approver);
     
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -1121,6 +1191,10 @@ ACTION community::createpos(
     RightHolder right_voter
 ) {
     require_auth(community_account);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -1242,6 +1316,10 @@ ACTION community::createpos(
 ACTION community::initadminpos(name community_account, name creator)
 {
     require_auth(community_account);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -1366,6 +1444,10 @@ ACTION community::configpos(
 ) {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -1450,6 +1532,10 @@ ACTION community::appointpos(name community_account, uint64_t pos_id, vector<nam
 {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -1468,6 +1554,10 @@ ACTION community::appointpos(name community_account, uint64_t pos_id, vector<nam
 ACTION community::nominatepos(name community_account, uint64_t pos_id, name owner)
 {
     require_auth(owner);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = owner;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -1503,6 +1593,10 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
 {
     require_auth(voter);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+ 
     auto ram_payer = voter;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -1556,6 +1650,10 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
 ACTION community::approvepos(name community_account, uint64_t pos_id)
 {
     require_auth(community_account);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -1613,6 +1711,10 @@ ACTION community::dismisspos(name community_account, uint64_t pos_id, name holde
 {
     require_auth(community_account);
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -1643,6 +1745,11 @@ ACTION community::createbadge(
         uint64_t issue_vote_duration
 ) {
     require_auth(community_account);
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+    const name cryptobadge_contract = _config.cryptobadge_contract_name;
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
@@ -1889,6 +1996,11 @@ ACTION community::configbadge(
 ) {
     require_auth(community_account);
     
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+    const name cryptobadge_contract = _config.cryptobadge_contract_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -2011,6 +2123,11 @@ ACTION community::issuebadge(name community_account, name badge_propose_name)
 {
     require_auth(community_account);
     
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+    const name cryptobadge_contract = _config.cryptobadge_contract_name;
+
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
@@ -2021,7 +2138,7 @@ ACTION community::issuebadge(name community_account, name badge_propose_name)
     ds >> trx;
     auto cb_data = unpack<issuebadge_params>(&trx.actions[0].data[0], trx.actions[0].data.size());
 
-    check (cb_data.issuer == community_account, "ERR::ISSUE_BADGE_PROPOSAL_INVALID::Issuer in issue badge proposal not the same with community account");
+    check (cb_data.issuer == community_account, "ERR::ISSUE_BADGE_PROPOSAL_INVALID::Issuer in issue badge proposal not the same with community account");;
 
     action(
         permission_level{community_account, "active"_n},
@@ -2036,6 +2153,35 @@ ACTION community::issuebadge(name community_account, name badge_propose_name)
         "exec"_n,
         std::make_tuple(cryptobadge_contract, badge_propose_name, community_account))
         .send();
+}
+
+ACTION community::setconfig(
+        name community_creator_name,
+        name cryptobadge_contract_name,
+        name token_contract_name,
+        name ram_payer_name,
+        symbol core_symbol,
+        uint64_t init_ram_amount,
+        asset min_active_contract,
+        asset init_net,
+        asset init_cpu
+    ) {
+	require_auth( _self );
+
+	global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+
+	_config.community_creator_name = community_creator_name;
+    _config.cryptobadge_contract_name = cryptobadge_contract_name;
+    _config.token_contract_name = token_contract_name;
+    _config.ram_payer_name = ram_payer_name;
+    _config.core_symbol = core_symbol;
+    _config.init_ram_amount = init_ram_amount;
+    _config.init_net = init_net;
+    _config.init_cpu = init_cpu;
+    _config.min_active_contract = min_active_contract;
+
+	config.set(_config, _self);
 }
 
 bool community::verify_voter(name community_account, name voter, uint64_t code_id, bool is_amend_code)
@@ -2106,6 +2252,10 @@ bool community::is_pos_candidate(name community_account, uint64_t pos_id, name o
         }
     }
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name cryptobadge_contract = _config.cryptobadge_contract_name;
+
     // verify right_holder's badge
     auto _required_badge_ids = election_itr->pos_candidates.required_badges;
     for (int i = 0; i < _required_badge_ids.size(); i++)
@@ -2124,7 +2274,11 @@ bool community::is_pos_candidate(name community_account, uint64_t pos_id, name o
 bool community::verify_community_account_input(name community_account) {
     if (community_account.length() < 6) return false;
 
-    if (community_account.suffix() != community_name_creator) {
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name community_creator_name = _config.community_creator_name;
+
+    if (community_account.suffix() != community_creator_name) {
         return false;
     }
 
@@ -2154,6 +2308,10 @@ bool community::is_pos_voter(name community_account, uint64_t pos_id, name owner
             return true;
         }
     }
+
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name cryptobadge_contract = _config.cryptobadge_contract_name;
 
     auto _required_badge_ids = election_itr->pos_voters.required_badges;
     for (int i = 0; i < _required_badge_ids.size(); i++)
@@ -2201,6 +2359,11 @@ bool community::verify_account_right_holder(name community_account, RightHolder 
     if (it != _account_right_holders.end())
         return true;
 
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name cryptobadge_contract = _config.cryptobadge_contract_name;
+    const name token_contract = _config.token_contract_name;
+
     // verify right_holder's badge
     auto _required_badge_ids = right_holder.required_badges;
     for (int i = 0; i < _required_badge_ids.size(); i++)
@@ -2230,7 +2393,7 @@ bool community::verify_account_right_holder(name community_account, RightHolder 
     auto _required_token_ids = right_holder.required_tokens;
     for (int i = 0; i < _required_token_ids.size(); i++)
     {
-        accounts _acnts(tiger_token_contract, owner.value);
+        accounts _acnts(token_contract, owner.value);
         auto owner_token_itr = _acnts.find(_required_token_ids[i].symbol.code().raw());
 
         if (owner_token_itr != _acnts.end() && owner_token_itr->balance.amount >= _required_token_ids[i].amount)
@@ -2289,6 +2452,10 @@ uint64_t community::get_pos_proposed_id()
 }
 
 void community::call_action(name community_account, name ram_payer, name contract_name, name action_name, vector<char> packed_params) {
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const name ram_payer_system = _config.ram_payer_name;
+
     action sending_action;
     sending_action.authorization.push_back(permission_level{community_account, "active"_n});
     if(ram_payer == ram_payer_system) sending_action.authorization.push_back(permission_level{ram_payer_system, "active"_n});
@@ -2300,10 +2467,14 @@ void community::call_action(name community_account, name ram_payer, name contrac
 
 asset community::convertbytes2cat(uint32_t bytes)
 {
+    global_table config(_self, _self.value);
+	_config = config.exists() ? config.get() : global{};
+	const symbol core_symbol = _config.core_symbol;
+
     eosiosystem::rammarket _rammarket("eosio"_n, "eosio"_n.value);
     auto itr = _rammarket.find(ramcore_symbol.raw());
     auto tmp = *itr;
-    auto eosout = tmp.convert(asset(bytes, ram_symbol), CORE_SYMBOL);
+    auto eosout = tmp.convert(asset(bytes, ram_symbol), core_symbol);
     return eosout;
 }
 
@@ -2369,4 +2540,5 @@ EOSIO_ABI_CUSTOM(community,
 (setsoleexec)
 (setproposer)
 (setvoterule)
+(setconfig)
 )
