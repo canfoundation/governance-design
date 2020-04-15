@@ -12,7 +12,6 @@ using namespace eosio;
 using namespace std;
 CONTRACT community : public contract
 {
-
     enum CodeRightHolder
     {
         CODE = 0,
@@ -407,10 +406,9 @@ private:
     // position proposals with scope is community_account
     TABLE pos_candidate {
         name cadidate;
-        double voted_percent;
-        map<name, uint64_t> voters_detail;
+        vector<name> voters;
         uint64_t primary_key() const { return cadidate.value; }
-        double by_voted_percent() const { return -voted_percent;}
+        double by_voted_percent() const { return static_cast<double>(-voters.size()); }
     };
     typedef eosio::multi_index<"poscandidate"_n, pos_candidate,indexed_by<"byvoted"_n, const_mem_fun<pos_candidate, double, &pos_candidate::by_voted_percent>>> poscandidate_table;
 	/*
