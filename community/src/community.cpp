@@ -1346,7 +1346,9 @@ ACTION community::configpos(
     auto pos_itr = _positions.find(pos_id);
     check(pos_itr != _positions.end(), "ERR::VERIFY_FAILED::Position id doesn't exist.");
 
-    _positions.modify(pos_itr, ram_payer, [&](auto &row) {
+    check(pos_itr->holders.size() <= max_holder, "ERR::MAX_HOLDER_LESS_THAN_HOLDER::Max holder can not less than current position holder, please dismiss some one before configure for position");
+
+    _positions.modify(pos_itr, community_account, [&](auto &row) {
         row.pos_name = pos_name;
         row.max_holder = max_holder;
         row.fulfillment_type = filled_through;
@@ -1463,7 +1465,6 @@ ACTION community::nominatepos(name community_account, uint64_t pos_id, name owne
 
     _poscandidate.emplace(ram_payer, [&](auto &row) {
         row.cadidate = owner;
-        row.voted_percent = 0;
     });
 }
 
@@ -1499,27 +1500,25 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
     auto candidate_itr = _pos_candidate.find(candidate.value);
     check(candidate_itr != _pos_candidate.end(), "ERR::CANDIDATE_NOT_ESIXT::The candidate does not exist");
 
-    auto new_voters_detail = candidate_itr->voters_detail;
-    uint64_t total_participation = candidate_itr->voters_detail.size();
-    uint64_t total_voted = round((candidate_itr->voted_percent * total_participation) / 100);
-    auto voter_detail_itr = candidate_itr->voters_detail.find(voter);
+    auto new_voters_detail = candidate_itr->voters;
+    auto voter_detail_itr = std::find(candidate_itr->voters.begin(), candidate_itr->voters.end(), voter);
 
-    double voted_percent = 0;
-    if (voter_detail_itr == candidate_itr->voters_detail.end())
+    if (voter_detail_itr == candidate_itr->voters.end())
     {
-        new_voters_detail.insert(pair<name, int>(voter, vote_status));
-        voted_percent = double((vote_status == VOTE ? total_voted + 1 : total_voted) * 100) / (total_participation + 1);
+        if (vote_status == VoteStatus::VOTE) {
+            new_voters_detail.push_back(voter);
+        }
     }
     else
     {
-        check(voter_detail_itr->second != vote_status, "ERR::VOTE_DUPLICATE::The voter has already voted for this code with the same status");
-        voted_percent = double((vote_status == VOTE ? total_voted + 1 : total_voted - 1) * 100) / total_participation;
-        new_voters_detail[voter] = vote_status;
+        if (vote_status == VoteStatus::REJECT)
+        {
+            new_voters_detail.erase(voter_detail_itr);
+        }
     }
 
-    _pos_candidate.modify(candidate_itr, ram_payer, [&](auto &row) {
-        row.voted_percent = voted_percent;
-        row.voters_detail = new_voters_detail;
+    _pos_candidate.modify(candidate_itr, voter, [&](auto &row) {
+        row.voters = new_voters_detail;
     });
 }
 
@@ -1555,9 +1554,9 @@ ACTION community::approvepos(name community_account, uint64_t pos_id)
     std::vector<name> top_candidates;
     top_candidates.reserve(pos_itr->max_holder);
 
-    for (auto it = idx.cbegin(); it != idx.cend() && top_candidates.size() <= pos_itr->max_holder; ++it)
+    for (auto it = idx.cbegin(); it != idx.cend() && top_candidates.size() < pos_itr->max_holder; ++it)
     {
-        if (it->voted_percent > 0)
+        if (it->voters.size() > 0)
             top_candidates.emplace_back(it->cadidate);
     }
 
