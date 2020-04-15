@@ -99,7 +99,15 @@ CONTRACT community : public contract
         uint64_t refer_id;
     };
 
+    static asset get_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+    {
+        accounts accountstable( token_contract_account, owner.value );
+        const auto& ac = accountstable.get( sym_code.raw() );
+        return ac.balance;
+    }
+
 public:
+
     struct RightHolder
     {
         bool is_anyone = false;
@@ -128,6 +136,8 @@ public:
     ACTION setaccess(name community_account,RightHolder right_access);
 
     ACTION initcode(name community_account, name creator, bool create_default_code);
+
+    ACTION inputmembers(name community_account, vector<name> added_members, vector<name> removed_members);
 
     ACTION initadminpos(name community_account, name creator);
 
@@ -248,14 +258,7 @@ private:
 
     uint64_t get_pos_proposed_id();
 
-    void call_action(name community_account, name contract_name, name action_name, vector<char> packed_params) {
-        action sending_action;
-        sending_action.authorization.push_back(permission_level{community_account, "active"_n});
-        sending_action.account = contract_name;
-        sending_action.name = action_name;
-        sending_action.data = packed_params;
-        sending_action.send();
-    }
+    void call_action(name community_account, name ram_payer, name contract_name, name action_name, vector<char> packed_params);
 
     uint64_t getposid();
 
@@ -281,6 +284,15 @@ private:
     };
 
     typedef eosio::multi_index<"community"_n, communityf, indexed_by< "by.creator"_n, const_mem_fun<communityf, uint64_t, &communityf::by_creator>>> community_table;
+
+    TABLE comunity_member
+    {
+        name member;
+
+        uint64_t primary_key() const { return member.value; }
+    };
+
+    typedef eosio::multi_index<"members"_n, comunity_member> members_table;
 
     TABLE accession
     {
