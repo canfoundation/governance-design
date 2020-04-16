@@ -247,6 +247,18 @@ public:
 
     ACTION issuebadge(name community_account, name badge_propose_name);
 
+    ACTION setconfig(
+        name community_creator_name,
+        name cryptobadge_contract_name,
+        name token_contract_name,
+        name ram_payer_name,
+        symbol core_symbol,
+        uint64_t init_ram_amount,
+        asset min_active_contract,
+        asset init_net,
+        asset init_cpu
+    );
+
 private:
     bool verify_approver(name community_account, name voter, uint64_t code_id, bool is_ammnend_code);
 
@@ -287,6 +299,8 @@ private:
 
         uint64_t by_creator() const { return creator.value; }
         uint64_t primary_key() const { return community_account.value; }
+
+        EOSLIB_SERIALIZE( communityf, (community_account)(creator)(community_name)(member_badge)(community_url)(description));
     };
 
     typedef eosio::multi_index<"community"_n, communityf, indexed_by< "by.creator"_n, const_mem_fun<communityf, uint64_t, &communityf::by_creator>>> community_table;
@@ -303,6 +317,8 @@ private:
     TABLE accession
     {
         RightHolder right_access;
+
+        EOSLIB_SERIALIZE( accession, (right_access));
     };
 
     typedef eosio::singleton<"accession"_n, accession> accession_table;
@@ -321,6 +337,8 @@ private:
         uint64_t primary_key() const { return code_id; }
         uint64_t by_code_name() const { return code_name.value; }
         uint128_t by_reference_id() const { return build_reference_id(code_type.refer_id, code_type.type); }
+
+        EOSLIB_SERIALIZE( codef, (code_id)(code_name)(contract_name)(code_actions)(code_exec_type)(amendment_exec_type)(code_type));
     };
 
     typedef eosio::multi_index<"codes"_n, codef, 
@@ -340,6 +358,8 @@ private:
         RightHolder right_voter;
 
         uint64_t primary_key() const { return code_id; }
+
+        EOSLIB_SERIALIZE( collective_decision, (code_id)(vote_duration)(pass_rule)(approval_type)(right_proposer)(right_approver)(right_voter));
     };
 
     typedef eosio::multi_index<"codevoterule"_n, collective_decision> code_collective_decision_table;
@@ -354,6 +374,8 @@ private:
         RightHolder right_executor;
 
         uint64_t primary_key() const { return code_id; }
+
+        EOSLIB_SERIALIZE( sole_decision, (code_id)(right_executor));
     };
 
     typedef eosio::multi_index<"codeexecrule"_n, sole_decision> code_sole_decision_table;
@@ -377,6 +399,8 @@ private:
         uint64_t primary_key() const { return proposal_name.value; }
         uint64_t by_proposer() const { return proposer.value; }
         uint64_t by_code_id() const { return code_id; }
+
+        EOSLIB_SERIALIZE( code_proposalf, (proposal_name)(proposer)(voted_percent)(code_id)(code_actions)(voters_detail)(proposal_status)(propose_time)(exec_at));
     };
 
     typedef eosio::multi_index<"coproposals"_n, code_proposalf,
@@ -394,6 +418,8 @@ private:
         map<name, uint64_t> refer_codes;
 
         uint64_t primary_key() const { return pos_id; }
+
+        EOSLIB_SERIALIZE( positionf, (pos_id)(pos_name)(max_holder)(holders)(fulfillment_type)(refer_codes));
     };
     typedef eosio::multi_index<"positions"_n, positionf> position_table;
 
@@ -407,6 +433,8 @@ private:
         RightHolder pos_voters;
 
         uint64_t primary_key() const { return pos_id; }
+
+        EOSLIB_SERIALIZE( election_rule, (pos_id)(term)(next_term_start_at)(voting_period)(pos_candidates)(pos_voters));
     };
         
     typedef eosio::multi_index<"fillingrule"_n, election_rule> election_table;    
@@ -418,6 +446,8 @@ private:
         uint8_t pos_proposal_status;
         time_point approved_at;
         uint64_t primary_key() const { return pos_id; }
+
+        EOSLIB_SERIALIZE( pos_proposal, (pos_id)(pos_proposal_id)(pos_proposal_status)(approved_at));
     };
     typedef eosio::multi_index<"posproposal"_n, pos_proposal> posproposal_table;
 
@@ -427,26 +457,54 @@ private:
         vector<name> voters;
         uint64_t primary_key() const { return cadidate.value; }
         double by_voted_percent() const { return static_cast<double>(-voters.size()); }
+
+        EOSLIB_SERIALIZE( pos_candidate, (cadidate)(voters));
     };
     typedef eosio::multi_index<"poscandidate"_n, pos_candidate,indexed_by<"byvoted"_n, const_mem_fun<pos_candidate, double, &pos_candidate::by_voted_percent>>> poscandidate_table;
 	/*
 	* global singelton table, used for position id building
 	* Scope: self
 	*/
-	TABLE global{
+	TABLE global {
 		  
 		global(){}
 		uint64_t posproposed_id	= 0;
+        name community_creator_name = "c"_n;
+        name cryptobadge_contract_name = "badge"_n;
+        name token_contract_name = "tiger.token"_n;
+        name ram_payer_name = "ram.can"_n;
+        symbol core_symbol = symbol(symbol_code("CAT"), 4);
+        uint64_t init_ram_amount = 10*1024;
+        // init stake net for new community account
+        asset init_net = asset(1'0000, this->core_symbol);
+        // init statke cpu for new community account
+        asset init_cpu = asset(1'0000, this->core_symbol);
+        asset min_active_contract = asset(10'0000, this->core_symbol);
 
-		EOSLIB_SERIALIZE( global, (posproposed_id) )
+		EOSLIB_SERIALIZE( global, 
+            (posproposed_id)
+            (community_creator_name)
+            (cryptobadge_contract_name)
+            (token_contract_name)
+            (ram_payer_name)
+            (core_symbol)
+            (init_ram_amount)
+            (init_net)
+            (init_cpu) 
+            (min_active_contract)
+        );
 	};
     typedef eosio::singleton< "global"_n, global> global_table;
+    typedef eosio::multi_index<"global"_n, global> fglobal_table;
+    global _config;
 
     // refer from tiger token contract
     TABLE account {
         asset    balance;
-
+ 
         uint64_t primary_key()const { return balance.symbol.code().raw(); }
+
+        EOSLIB_SERIALIZE( account, (balance));
     };
 
     typedef eosio::multi_index< "accounts"_n, account > accounts;
