@@ -47,6 +47,37 @@ const name BA_Config = "ba.config"_n;
 const name BA_Adopt = "ba.adopt"_n;
 const name BA_Discard = "ba.discard"_n;
 
+struct createbadge_params {
+	name issuer;
+	uint64_t badge_id;
+	string name;
+	string image_url;
+	string path;
+	string description;
+	string criteria;
+};
+
+struct updatebadge_params {
+	name issuer;
+    uint64_t badge_id;
+    string name;
+    string image_url;
+    string path;
+    string description;
+    string criteria;
+};
+
+struct issuebadge_params {
+    name issuer;
+    name owner;
+    uint64_t badge_id;
+    uint64_t badge_revision;
+    uint64_t cert_id;
+    string encripted_data;
+    uint64_t expire_at;
+    bool require_claim;
+};
+
 void community::transfer(name from, name to, asset quantity, string memo)
 {
     if (from == _self)
@@ -1127,7 +1158,7 @@ ACTION community::createpos(
         row.code_actions = code_actions;
         row.code_exec_type = ExecutionType::SOLE_DECISION;
         row.amendment_exec_type = ExecutionType::SOLE_DECISION;
-        row.code_type = {CodeTypeEnum::POSITION, newPositionId};
+        row.code_type = {CodeTypeEnum::POSITION_CONFIG, newPositionId};
     });
 
     _code_execution_rule.emplace(ram_payer, [&](auto &row) {
@@ -1150,7 +1181,7 @@ ACTION community::createpos(
         row.code_actions = code_actions;
         row.code_exec_type = ExecutionType::SOLE_DECISION;
         row.amendment_exec_type = ExecutionType::SOLE_DECISION;
-        row.code_type = {CodeTypeEnum::POSITION, newPositionId};
+        row.code_type = {CodeTypeEnum::POSITION_APPOINT, newPositionId};
     });
 
     _code_execution_rule.emplace(ram_payer, [&](auto &row) {
@@ -1173,7 +1204,7 @@ ACTION community::createpos(
         row.code_actions = code_actions;
         row.code_exec_type = ExecutionType::SOLE_DECISION;
         row.amendment_exec_type = ExecutionType::SOLE_DECISION;
-        row.code_type = {CodeTypeEnum::POSITION, newPositionId};
+        row.code_type = {CodeTypeEnum::POSITION_DISMISS, newPositionId};
     });
 
     _code_execution_rule.emplace(ram_payer, [&](auto &row) {
@@ -1247,7 +1278,7 @@ ACTION community::initadminpos(name community_account, name creator)
         row.code_actions = code_actions;
         row.code_exec_type = ExecutionType::SOLE_DECISION;
         row.amendment_exec_type = ExecutionType::SOLE_DECISION;
-        row.code_type = {CodeTypeEnum::POSITION, newPositionId};
+        row.code_type = {CodeTypeEnum::POSITION_CONFIG, newPositionId};
     });
 
     _code_execution_rule.emplace(ram_payer, [&](auto &row) {
@@ -1270,7 +1301,7 @@ ACTION community::initadminpos(name community_account, name creator)
         row.code_actions = code_actions;
         row.code_exec_type = ExecutionType::SOLE_DECISION;
         row.amendment_exec_type = ExecutionType::SOLE_DECISION;
-        row.code_type = {CodeTypeEnum::POSITION, newPositionId};
+        row.code_type = {CodeTypeEnum::POSITION_APPOINT, newPositionId};
     });
 
     _code_execution_rule.emplace(ram_payer, [&](auto &row) {
@@ -1293,7 +1324,7 @@ ACTION community::initadminpos(name community_account, name creator)
         row.code_actions = code_actions;
         row.code_exec_type = ExecutionType::SOLE_DECISION;
         row.amendment_exec_type = ExecutionType::SOLE_DECISION;
-        row.code_type = {CodeTypeEnum::POSITION, newPositionId};
+        row.code_type = {CodeTypeEnum::POSITION_DISMISS, newPositionId};
     });
 
     _code_execution_rule.emplace(ram_payer, [&](auto &row) {
@@ -1600,7 +1631,6 @@ ACTION community::dismisspos(name community_account, uint64_t pos_id, name holde
 
 ACTION community::createbadge(
         name community_account,
-        uint64_t badge_id,
         uint8_t issue_type,
         name badge_propose_name,
         uint8_t issue_exec_type,
@@ -1617,7 +1647,16 @@ ACTION community::createbadge(
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
-    // Todo: Verify badge param:
+    multisig_proposals proptable( "eosio.msig"_n, cryptobadge_contract.value );
+    auto& prop = proptable.get( badge_propose_name.value, "proposal not found" );
+    transaction trx;
+    datastream<const char*> ds( prop.packed_transaction.data(), prop.packed_transaction.size() );
+    ds >> trx;
+	auto cb_data = unpack<createbadge_params>(&trx.actions[0].data[0], trx.actions[0].data.size());
+
+    check (cb_data.issuer == community_account, "ERR::CREATE_BADGE_PROPOSAL_INVALID::Issuer in create badge proposal not the same with community account");
+	
+    uint64_t badge_id = cb_data.badge_id;
 
     action(
         permission_level{community_account, "active"_n},
@@ -1658,89 +1697,178 @@ ACTION community::createbadge(
         check(false, "ERR::BADGE_ISSUE_TYPE_INVALID::Badge issue type is invalid");
     }
 
+    auto getByCodeReferId = _codes.get_index<"by.refer.id"_n>();
+
+    uint128_t issue_badge_reference_id = build_reference_id(badge_id, CodeTypeEnum::BADGE_ISSUE);
+    auto issue_badge_code_itr = getByCodeReferId.find(issue_badge_reference_id);
+    uint64_t issue_badge_code_id;
+
     // save new code to the table
-    auto issue_badge_code = _codes.emplace(ram_payer, [&](auto &row) {
-        row.code_id = _codes.available_primary_key();
-        row.code_name = issue_badge_code_name;
-        row.contract_name = get_self();
-        row.code_actions = code_actions;
-        row.code_exec_type = issue_exec_type;
-        row.code_type = {CodeTypeEnum::BADGE, badge_id};
-    });
+    if (issue_badge_code_itr == getByCodeReferId.end()) {
+        auto newIssueBadgeCode = _codes.emplace(ram_payer, [&](auto &row) {
+            row.code_id = _codes.available_primary_key();
+            row.code_name = issue_badge_code_name;
+            row.contract_name = get_self();
+            row.code_actions = code_actions;
+            row.code_exec_type = issue_exec_type;
+            row.code_type = { CodeTypeEnum::BADGE_ISSUE, badge_id };
+        });
+
+        issue_badge_code_id = newIssueBadgeCode->code_id;
+    } else {
+        getByCodeReferId.modify(issue_badge_code_itr, ram_payer, [&](auto &row) {
+            row.code_name = issue_badge_code_name;
+            row.code_exec_type = issue_exec_type;
+            row.code_type = { CodeTypeEnum::BADGE_ISSUE, badge_id };
+        });
+
+        issue_badge_code_id = issue_badge_code_itr->code_id;
+    }
 
     if (issue_exec_type != ExecutionType::COLLECTIVE_DECISION) {
         verify_right_holder_input(community_account, right_issue_sole_executor);
-        _code_execution_rule.emplace(ram_payer, [&](auto &row) {
-            row.code_id = issue_badge_code->code_id;
-            row.right_executor = right_issue_sole_executor;
-        });
+        auto code_exec_type_itr = _code_execution_rule.find(issue_badge_code_id);
+        if (code_exec_type_itr == _code_execution_rule.end()) {
+            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
+                row.code_id = issue_badge_code_id;
+                row.right_executor = right_issue_sole_executor;
+            });
+        } else {
+            _code_execution_rule.modify(code_exec_type_itr, ram_payer, [&](auto &row) {
+                row.right_executor = right_issue_sole_executor;
+            });
+        }
     }
 
     if (issue_exec_type != ExecutionType::SOLE_DECISION) {
         verify_right_holder_input(community_account, right_issue_proposer);
         verify_right_holder_input(community_account, right_issue_approver);
         verify_right_holder_input(community_account, right_issue_voter);
-        _code_vote_rule.emplace(ram_payer, [&](auto &row) {
-            row.code_id = issue_badge_code->code_id;
-            row.right_proposer = right_issue_proposer;
-            row.right_approver = right_issue_approver;
-            row.right_voter = right_issue_voter;
-            row.approval_type = issue_approval_type;
-            row.pass_rule = issue_pass_rule;
-            row.vote_duration = issue_vote_duration;
-        });
+        auto code_vote_rule_itr = _code_vote_rule.find(issue_badge_code_itr->code_id);
+        if (code_vote_rule_itr == _code_vote_rule.end()) {
+            _code_vote_rule.emplace(ram_payer, [&](auto &row) {
+                row.code_id = issue_badge_code_id;
+                row.right_proposer = right_issue_proposer;
+                row.right_approver = right_issue_approver;
+                row.right_voter = right_issue_voter;
+                row.approval_type = issue_approval_type;
+                row.pass_rule = issue_pass_rule;
+                row.vote_duration = issue_vote_duration;
+            });
+        } else {
+            _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
+                row.right_proposer = right_issue_proposer;
+                row.right_approver = right_issue_approver;
+                row.right_voter = right_issue_voter;
+                row.approval_type = issue_approval_type;
+                row.pass_rule = issue_pass_rule;
+                row.vote_duration = issue_vote_duration;
+            });
+        }
     }
 
     code_actions.clear();
     code_actions.push_back("configbadge"_n);
 
+    uint128_t config_badge_reference_id = build_reference_id( badge_id, CodeTypeEnum::BADGE_CONFIG );
+    auto config_badge_code_itr = getByCodeReferId.find(config_badge_reference_id);
+    uint64_t config_badge_code_id;
+
     // save new code to the table
-    auto config_badge_code = _codes.emplace(ram_payer, [&](auto &row) {
-        row.code_id = _codes.available_primary_key();
-        row.code_name = BA_Config;
-        row.contract_name = get_self();
-        row.code_actions = code_actions;
-        row.amendment_exec_type = ba_create_code->code_exec_type;
-        row.code_type = {CodeTypeEnum::BADGE, badge_id};
-    });
+    if (config_badge_code_itr == getByCodeReferId.end()) {
+        auto new_config_badge_code = _codes.emplace(ram_payer, [&](auto &row) {
+            row.code_id = _codes.available_primary_key();
+            row.code_name = BA_Config;
+            row.contract_name = get_self();
+            row.code_actions = code_actions;
+            row.amendment_exec_type = ba_create_code->code_exec_type;
+            row.code_type = {CodeTypeEnum::BADGE_CONFIG, badge_id};
+        });
+        config_badge_code_id = new_config_badge_code->code_id;
+    } else {
+        getByCodeReferId.modify(config_badge_code_itr, ram_payer, [&](auto &row) {
+            row.code_name = issue_badge_code_name;
+            row.code_exec_type = issue_exec_type;
+            row.code_type = {CodeTypeEnum::BADGE_CONFIG, badge_id};
+        });
+        config_badge_code_id = config_badge_code_itr->code_id;
+    }
 
     if (ba_create_code->code_exec_type != ExecutionType::COLLECTIVE_DECISION) {
         auto ba_create_code_sole_decision = _code_execution_rule.find(ba_create_code->code_id);
+        auto config_badge_code_sole_decision = _code_execution_rule.find(config_badge_code_id);
+        auto config_badge_amend_code_sole_decision = _amend_execution_rule.find(config_badge_code_id);
         if(ba_create_code_sole_decision != _code_execution_rule.end()) {
-            _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = config_badge_code->code_id;
-                row.right_executor = ba_create_code_sole_decision->right_executor;
-            });
+            if (config_badge_code_sole_decision == _code_execution_rule.end()) {
+                _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
+                    row.code_id = config_badge_code_id;
+                    row.right_executor = ba_create_code_sole_decision->right_executor;
+                });
 
-            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = config_badge_code->code_id;
-                row.right_executor = ba_create_code_sole_decision->right_executor;
-            });
+                _code_execution_rule.emplace(ram_payer, [&](auto &row) {
+                    row.code_id = config_badge_code_id;
+                    row.right_executor = ba_create_code_sole_decision->right_executor;
+                });
+            } else
+            {
+                _amend_execution_rule.modify(config_badge_amend_code_sole_decision, ram_payer, [&](auto &row) {
+                    row.right_executor = ba_create_code_sole_decision->right_executor;
+                });
+
+                _code_execution_rule.modify(config_badge_code_sole_decision, ram_payer, [&](auto &row) {
+                    row.right_executor = ba_create_code_sole_decision->right_executor;
+                });
+            }
         }
     }
 
     if (ba_create_code->code_exec_type != ExecutionType::SOLE_DECISION) {
         auto ba_create_code_collective_decision = _code_vote_rule.find(ba_create_code->code_id);
+        auto config_badge_code_collective_decision = _code_vote_rule.find(config_badge_code_id);
+        auto config_badge_amend_code_collective_decision = _amend_vote_rule.find(config_badge_code_id);
         if (ba_create_code_collective_decision != _code_vote_rule.end()) {
-            _amend_vote_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = config_badge_code->code_id;
-                row.right_proposer = ba_create_code_collective_decision->right_proposer;
-                row.right_approver = ba_create_code_collective_decision->right_approver;
-                row.right_voter = ba_create_code_collective_decision->right_voter;
-                row.approval_type = ba_create_code_collective_decision->approval_type;
-                row.pass_rule = ba_create_code_collective_decision->pass_rule;
-                row.vote_duration = ba_create_code_collective_decision->vote_duration;
-            });
+            if (config_badge_code_collective_decision == _code_vote_rule.end())
+            {
+                _amend_vote_rule.emplace(ram_payer, [&](auto &row) {
+                    row.code_id = config_badge_code_id;
+                    row.right_proposer = ba_create_code_collective_decision->right_proposer;
+                    row.right_approver = ba_create_code_collective_decision->right_approver;
+                    row.right_voter = ba_create_code_collective_decision->right_voter;
+                    row.approval_type = ba_create_code_collective_decision->approval_type;
+                    row.pass_rule = ba_create_code_collective_decision->pass_rule;
+                    row.vote_duration = ba_create_code_collective_decision->vote_duration;
+                });
 
-            _code_vote_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = config_badge_code->code_id;
-                row.right_proposer = ba_create_code_collective_decision->right_proposer;
-                row.right_approver = ba_create_code_collective_decision->right_approver;
-                row.right_voter = ba_create_code_collective_decision->right_voter;
-                row.approval_type = ba_create_code_collective_decision->approval_type;
-                row.pass_rule = ba_create_code_collective_decision->pass_rule;
-                row.vote_duration = ba_create_code_collective_decision->vote_duration;
-            });
+                _code_vote_rule.emplace(ram_payer, [&](auto &row) {
+                    row.code_id = config_badge_code_id;
+                    row.right_proposer = ba_create_code_collective_decision->right_proposer;
+                    row.right_approver = ba_create_code_collective_decision->right_approver;
+                    row.right_voter = ba_create_code_collective_decision->right_voter;
+                    row.approval_type = ba_create_code_collective_decision->approval_type;
+                    row.pass_rule = ba_create_code_collective_decision->pass_rule;
+                    row.vote_duration = ba_create_code_collective_decision->vote_duration;
+                });
+            } else {
+                _amend_vote_rule.modify(config_badge_amend_code_collective_decision, ram_payer, [&](auto &row) {
+                    row.code_id = config_badge_code_id;
+                    row.right_proposer = ba_create_code_collective_decision->right_proposer;
+                    row.right_approver = ba_create_code_collective_decision->right_approver;
+                    row.right_voter = ba_create_code_collective_decision->right_voter;
+                    row.approval_type = ba_create_code_collective_decision->approval_type;
+                    row.pass_rule = ba_create_code_collective_decision->pass_rule;
+                    row.vote_duration = ba_create_code_collective_decision->vote_duration;
+                });
+
+                _code_vote_rule.modify(config_badge_code_collective_decision, ram_payer, [&](auto &row) {
+                    row.code_id = config_badge_code_id;
+                    row.right_proposer = ba_create_code_collective_decision->right_proposer;
+                    row.right_approver = ba_create_code_collective_decision->right_approver;
+                    row.right_voter = ba_create_code_collective_decision->right_voter;
+                    row.approval_type = ba_create_code_collective_decision->approval_type;
+                    row.pass_rule = ba_create_code_collective_decision->pass_rule;
+                    row.vote_duration = ba_create_code_collective_decision->vote_duration;
+                });
+            }
         }
     }
 }
@@ -1765,6 +1893,15 @@ ACTION community::configbadge(
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
     if (update_badge_proposal_name != name("")) {
+        multisig_proposals proptable( "eosio.msig"_n, cryptobadge_contract.value );
+        auto& prop = proptable.get( update_badge_proposal_name.value, "proposal not found" );
+        transaction trx;
+        datastream<const char*> ds( prop.packed_transaction.data(), prop.packed_transaction.size() );
+        ds >> trx;
+	    auto cb_data = unpack<updatebadge_params>(&trx.actions[0].data[0], trx.actions[0].data.size());
+
+        check (cb_data.issuer == community_account, "ERR::CREATE_BADGE_PROPOSAL_INVALID::Issuer in update badge proposal not the same with community account");
+        check (cb_data.badge_id == badge_id, "ERR::CREATE_BADGE_PROPOSAL_INVALID::Issuer in update badge proposal not the same with config badge id");
         // Todo: Verify badge param:
         action(
             permission_level{community_account, "active"_n},
@@ -1801,35 +1938,30 @@ ACTION community::configbadge(
     }
 
     auto getByCodeReferId = _codes.get_index<"by.refer.id"_n>();
-    auto issue_badge_code_itr = getByCodeReferId.find(badge_id);
-
-    // find issue badge code of this configuring badge
-    while (issue_badge_code_itr != getByCodeReferId.end()) {
-        if (issue_badge_code_itr->code_type.type == CodeTypeEnum::BADGE && 
-            ( issue_badge_code_itr->code_name == BA_Issue || issue_badge_code_itr->code_name == BA_Claim)) {
-                break;
-        }
-        issue_badge_code_itr++;
-    }
+    uint128_t issue_badge_reference_id = build_reference_id(badge_id, CodeTypeEnum::BADGE_ISSUE);
+    auto issue_badge_code_itr = getByCodeReferId.find(issue_badge_reference_id);
+    uint64_t issue_badge_code_id;
     
     // save new code to the table
     if (issue_badge_code_itr == getByCodeReferId.end()) {
         vector<name> code_actions;
         code_actions.push_back("issuebadge"_n);
-        _codes.emplace(ram_payer, [&](auto &row) {
+        auto new_issue_badge_code = _codes.emplace(ram_payer, [&](auto &row) {
             row.code_id = _codes.available_primary_key();
             row.code_name = issue_badge_code_name;
             row.contract_name = get_self();
             row.code_actions = code_actions;
-            row.amendment_exec_type = issue_exec_type;
-            row.code_type = {CodeTypeEnum::BADGE, badge_id};
+            row.code_exec_type = issue_exec_type;
+            row.code_type = {CodeTypeEnum::BADGE_ISSUE, badge_id};
         });
+        issue_badge_code_id = new_issue_badge_code->code_id;
     } else {
         getByCodeReferId.modify(issue_badge_code_itr, ram_payer, [&](auto &row) {
             row.code_name = issue_badge_code_name;
             row.code_exec_type = issue_exec_type;
-            row.code_type = {CodeTypeEnum::BADGE, badge_id};
+            row.code_type = {CodeTypeEnum::BADGE_ISSUE, badge_id};
         });
+        issue_badge_code_id = issue_badge_code_itr->code_id;
     }
 
     if (issue_exec_type != ExecutionType::COLLECTIVE_DECISION) {
@@ -1837,7 +1969,7 @@ ACTION community::configbadge(
         auto code_exec_type_itr = _code_execution_rule.find(issue_badge_code_itr->code_id);
         if (code_exec_type_itr == _code_execution_rule.end()) {
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = issue_badge_code_itr->code_id;
+                row.code_id = issue_badge_code_id;
                 row.right_executor = right_issue_sole_executor;
             });
         } else {
@@ -1854,7 +1986,7 @@ ACTION community::configbadge(
         auto code_vote_rule_itr = _code_vote_rule.find(issue_badge_code_itr->code_id);
         if (code_vote_rule_itr == _code_vote_rule.end()) {
             _code_vote_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = issue_badge_code_itr->code_id;
+                row.code_id = issue_badge_code_id;
                 row.right_proposer = right_issue_proposer;
                 row.right_approver = right_issue_approver;
                 row.right_voter = right_issue_voter;
@@ -1882,7 +2014,15 @@ ACTION community::issuebadge(name community_account, name badge_propose_name)
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
-    // Todo: Verify ceritification param:
+    multisig_proposals proptable( "eosio.msig"_n, cryptobadge_contract.value );
+    auto& prop = proptable.get( badge_propose_name.value, "proposal not found" );
+    transaction trx;
+    datastream<const char*> ds( prop.packed_transaction.data(), prop.packed_transaction.size() );
+    ds >> trx;
+    auto cb_data = unpack<issuebadge_params>(&trx.actions[0].data[0], trx.actions[0].data.size());
+
+    check (cb_data.issuer == community_account, "ERR::ISSUE_BADGE_PROPOSAL_INVALID::Issuer in issue badge proposal not the same with community account");
+
     action(
         permission_level{community_account, "active"_n},
         "eosio.msig"_n,
@@ -2132,6 +2272,7 @@ void community::verify_right_holder_input(name community_account, RightHolder ri
         }
     } 
 }
+
 /*
 * Increment, save and return id for a new position.
 */

@@ -116,20 +116,24 @@
                     "type": "uint64"
                 },
                 {
+                    "name": "badge_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "badge_revision",
+                    "type": "uint64"
+                },
+                {
                     "name": "owner",
                     "type": "name"
                 },
                 {
-                    "name": "issuer",
-                    "type": "name"
-                },
-                {
-                    "name": "badgeid",
+                    "name": "state",
                     "type": "uint64"
                 },
                 {
-                    "name": "idata",
-                    "type": "checksum256"
+                    "name": "expire_at",
+                    "type": "uint64"
                 }
             ]
         },
@@ -438,10 +442,6 @@
                 {
                     "name": "community_account",
                     "type": "name"
-                },
-                {
-                    "name": "badge_id",
-                    "type": "uint64"
                 },
                 {
                     "name": "issue_type",
@@ -838,6 +838,20 @@
                 {
                     "name": "refer_codes",
                     "type": "pair_name_uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "proposal",
+            "base": "",
+            "fields": [
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "packed_transaction",
+                    "type": "bytes"
                 }
             ]
         },
@@ -1305,13 +1319,6 @@
             "key_types": []
         },
         {
-            "name": "ccerts",
-            "type": "ccert",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
             "name": "codeexecrule",
             "type": "sole_decision",
             "index_type": "i64",
@@ -1384,6 +1391,20 @@
         {
             "name": "posproposal",
             "type": "pos_proposal",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "proposal",
+            "type": "proposal",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.certs",
+            "type": "ccert",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

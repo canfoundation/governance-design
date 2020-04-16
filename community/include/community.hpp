@@ -51,8 +51,11 @@ CONTRACT community : public contract
 
     enum CodeTypeEnum {
         NORMAL = 0,
-        POSITION,
-        BADGE,
+        POSITION_CONFIG,
+        POSITION_APPOINT,
+        POSITION_DISMISS,
+        BADGE_CONFIG,
+        BADGE_ISSUE,
     };
 
     enum BadgeIssueType {
@@ -215,7 +218,6 @@ public:
 
     ACTION createbadge(
         name community_account,
-        uint64_t badge_id,
         uint8_t issue_type,
         name badge_propose_name,
         uint8_t issue_exec_type,
@@ -270,6 +272,10 @@ private:
 
     void verify_right_holder_input(name community_account, RightHolder rightHolder);
 
+    static inline uint128_t build_reference_id(uint64_t reference_id, uint64_t type) {
+        return static_cast<uint128_t>(type)  | static_cast<uint128_t>(reference_id) << 64;
+    }
+
     TABLE communityf
     {
         name community_account;
@@ -314,12 +320,12 @@ private:
 
         uint64_t primary_key() const { return code_id; }
         uint64_t by_code_name() const { return code_name.value; }
-        uint64_t by_reference_id() const { return code_type.refer_id; }
+        uint128_t by_reference_id() const { return build_reference_id(code_type.refer_id, code_type.type); }
     };
 
     typedef eosio::multi_index<"codes"_n, codef, 
         indexed_by< "by.code.name"_n, const_mem_fun<codef, uint64_t, &codef::by_code_name>>,
-        indexed_by< "by.refer.id"_n, const_mem_fun<codef, uint64_t, &codef::by_reference_id>>
+        indexed_by< "by.refer.id"_n, const_mem_fun<codef, uint128_t, &codef::by_reference_id>>
         > code_table;
 
     // table code collective rule with scope is community_creator
@@ -448,18 +454,39 @@ private:
     // refer from crypto-badge contract
 	TABLE ccert
 	{
-		uint64_t                id;
-		name                    owner;
-		name                    issuer;
-		uint64_t                badgeid;
-		checksum256        idata;
+		uint64_t id;
+		uint64_t badge_id;
+		uint64_t badge_revision;
+		name owner;
+		uint64_t state;
+		uint64_t expire_at;
 
-		auto primary_key() const { return id;}
-		uint64_t by_issuer() const { return issuer.value;}
+		auto primary_key() const
+		{
+			return id;
+		}
+		uint64_t by_badge_id() const
+		{
+			return badge_id;
+		}
+		uint64_t by_owner() const
+		{
+			return owner.value;
+		}
 	};
-    typedef eosio::multi_index< "ccerts"_n, ccert,
-			eosio::indexed_by< "issuer"_n, eosio::const_mem_fun<ccert, uint64_t, &ccert::by_issuer> >
-			> ccerts;
+
+	typedef eosio::multi_index<"v1.certs"_n, ccert,
+							   eosio::indexed_by<"badgeid"_n, eosio::const_mem_fun<ccert, uint64_t, &ccert::by_badge_id>>,
+							   eosio::indexed_by<"owner"_n, eosio::const_mem_fun<ccert, uint64_t, &ccert::by_owner>>> ccerts;
+
+    TABLE proposal {
+        name                            proposal_name;
+        std::vector<char>               packed_transaction;
+
+        uint64_t primary_key()const { return proposal_name.value; }
+    };
+
+    typedef eosio::multi_index< "proposal"_n, proposal > multisig_proposals;
 
     community_table _communities;
 };
