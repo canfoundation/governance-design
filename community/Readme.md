@@ -2,7 +2,9 @@
 Governance Design
 ----------
 
-Version 2.0.0
+Version 1.1.0
+
+code hash b1b99cb027707a00a8e4457483dfb56fca9dc71c4730ad70d00636407a5e5703
 
 This contract provides multiple functionalities:
 - Users (creator) can create new community,
@@ -608,6 +610,31 @@ cleos -u http://18.182.95.163:8888 set contract governance23 . community.wasm co
 cleos -u http://18.182.95.163:8888 set account permission governance23 active '{"threshold": 1,"keys": [{"key": "EOS5W5LFjcWbih3ETW9nWzoBqXdYoz57zvSNzH58i4D9knt4FeYED","weight": 1}],"accounts": [{"permission":{"actor":"governance23","permission":"eosio.code"},"weight":1}]}' owner -p governance23
 ````
 
+### Create community creator account and delegate permission to governance conract
+```bash
+cleos system newaccount eosio --transfer c EOS6yfoREUrCWa1MZkjnfhLyG2cBk9spkayth6NKPBCmpLkzEK7NG --stake-net "5.0000 SYS" --stake-cpu "5.0000 SYS" --buy-ram-kbytes 50
+
+cleos set account permission c active '{"threshold": 1,"keys": [{"key": "EOS6yfoREUrCWa1MZkjnfhLyG2cBk9spkayth6NKPBCmpLkzEK7NG","weight": 1}],"accounts": [{"permission":{"actor":"governance23","permission":"eosio.code"},"weight":1}]}' owner -p c@active
+```
+
+### Set config for governance contract
+
+The following configuration is need to run governance contract:
+
+- community_creator_name: community creator name, it is the subfix of community name,
+- cryptobadge_contract_name: name of crypto badge contract,
+- token_contract_name: name of token contract,
+- ram_payer_name: name of ram payer for governance action,
+- core_symbol: core symbol of blockchain network,
+- init_ram_amount: init ram amount for new created community account,
+- init_net: init net for new created community account,
+- init_cpu: init cpu for new created community account,
+- min_active_contract: init amount of token to active governance contract
+
+```bash
+cleos push action governance23 setconfig '["c", "badge", "tiger.token", "ram.can", "4,CAT", 10240, "10.0000 CAT", "1.0001 CAT", "1.0001 CAT"]' -p governance23
+```
+
 ## Sample of community follow using cleos command
 ### create community account and delegate permission code to contract
 
@@ -618,6 +645,8 @@ cleos -u http://18.182.95.163:8888 set account permission governance23 active '{
 ````bash
 cleos -u http://18.182.95.163:8888 transfer quocleplayer governance23 "10.0000 CAT" "community232" -p quocleplayer
 
+# allow 3rd party pay CAT in creating community account instead of community creator
+cleos -u http://18.182.95.163:8888 transfer quyvoplayer governance23 "10.0000 CAT" "community232-quocleplayer" -p quyvoplayer
 
 $ cleos -u http://18.182.95.163:8888 get account community225
 created: 2019-11-29T10:43:04.500
@@ -632,7 +661,7 @@ permissions:
 
 $ cleos -u http://18.182.95.163:8888 push action governance23 create '[quocleplayer, community232, "Vingle Group", [], "vingle_group.com", "Testing", 1]' -p quocleplayer
 
-$ cleos -u http://18.182.95.163:8888 get table governance23 governance23 community
+$ cleos -u http://18.182.95.163:8888 get table governance23 governance23 v1.community
 {
   "rows": [{
       "community_account": "community232",
@@ -647,7 +676,7 @@ $ cleos -u http://18.182.95.163:8888 get table governance23 governance23 communi
 
 // initialize co.amend, co.access, po.create, ba.create when create new  community
 // by default all initial codes have execution type is sole decision with right account is admin
-$ cleos get table governance23 community241 codes
+$ cleos get table governance23 community241 v1.code
 {
   "rows": [{
       "code_id": 0,
@@ -707,7 +736,7 @@ $ cleos get table governance23 community241 codes
 }
 
 // right holder for sole execution code store in codeexecrule table
-$ cleos get table governance23 community241 codeexecrule
+$ cleos get table governance23 community241 v1.codeexec
 {
   "rows": [{
       "code_id": 0,
@@ -767,15 +796,65 @@ $ cleos get table governance23 community241 codeexecrule
 }
 ````
 
+### set who is community members
+1. pack action data of `inputmembers` action
+```bash
+cleos convert pack_action_data governance inputmembers '["community111",  ["quocle", "can"], ["eosio"]]'
+00004020a888a8b603000000000000a6410000000000ea305500000000a888a8b6010000000000ea3055
+```
+2. get id of `co.members` code
+```bash
+cleos get table governance community111 v1.code --index 2 --key-type i64 -L co.members -U co.members
+{
+  "rows": [{
+      "code_id": 1,
+      "code_name": "co.members",
+      "contract_name": "governance33",
+      "code_actions": [
+        "inputmembers"
+      ],
+      "code_exec_type": 0,
+      "amendment_exec_type": 0,
+      "code_type": {
+        "type": 0,
+        "refer_id": 0
+      }
+    }
+  ],
+  "more": false,
+  "next_key": ""
+}
+```
+
+3. execute `inputmembers` action of `co.members` code:
+```bash
+cleos push action governance execcode '["community111", "sally", 1, [["inputmembers", "00004020a888a8b603000000000000a6410000000000ea305500000000a888a8b6010000000000ea3055"]]]' -p quocle
+```
+
+4. get table `members` to verify
+```bash
+cleos get table governance community111 members
+{
+  "rows": [{
+      "member": "can"
+    },{
+      "member": "eosio"
+    }
+  ],
+  "more": false,
+  "next_key": ""
+}
+```
+
 ### set who can access community
 1. pack action data of `setaccess` action
 ```bash
-cleos convert pack_action_data governance setaccess '["community111", [0, 0, [], [], [], 0, ["sally", "chen", "corona"]]]'                                                
+cleos convert pack_action_data governance setaccess '["community111", [0, 0, [], [], [], 0, ["sally", "chen", "corona"]]]'
 1042f0d94d2d2545000000000000000000000000000300000000001fa3c100000000003055430000000098492f45
 ```
 2. get id of `co.access` code
 ```bash
-cleos get table governance community111 codes --index 2 --key-type i64 -L co.access -U co.access
+cleos get table governance community111 v1.code --index 2 --key-type i64 -L co.access -U co.access
 {
   "rows": [{
       "code_id": 2,
@@ -798,12 +877,12 @@ cleos get table governance community111 codes --index 2 --key-type i64 -L co.acc
 
 3. execute `setaccess` action of `co.access` code:
 ```bash
-cleos push action governance execcode '["community111", "sally", 2, [["setaccess", "1042f0d94d2d2545000000000000000000000000000300000000001fa3c100000000003055430000000098492f45"]]]' -p quocleplayer
+cleos push action governance execcode '["community111", "sally", 2, [["setaccess", "8080f0d94d2d2545000000000000000000000000000300000000001fa3c100000000003055430000000098492f45"]]]' -p quocleplayer
 ```
 
 4. get table `accession` to verify
 ```bash
-cleos get table governance24 community314 accession                                                                                                                     130 ↵
+cleos get table governance24 community314 v1.access
 {
   "rows": [{
       "right_access": {
@@ -840,46 +919,46 @@ cleos get table governance24 community314 accession                             
 ```bash
 // last parameter is identify set for amendment code (1 is set for amendment code, 0 is set for code)
 $ cleos convert pack_action_data governance setexectype '["community111", 2, 1, 0]'
-1042f0d94d2d254502000000000000000100
+8080f0d94d2d254503000000000000000100
 ```
 
 2. pack `setapprotype` action data to set approval type of code proposal (approval type 1 is approval consensus):
 ```bash
 $ cleos convert pack_action_data governance setapprotype '["community111", 2, 0, 1]'
-1042f0d94d2d254502000000000000000001
+8080f0d94d2d254503000000000000000001
 ```
 
 3. pack setproposer action data to set proposer right holder of `co.access` with code_id 3:
 
 ```bash
 $ cleos convert pack_action_data governance setproposer '["community111", 2, 0, [0, 0, [], [], [], 0, ["chen"]]]'
-1042f0d94d2d254502000000000000000000000000000000000000000000010000000000305543
+8080f0d94d2d254503000000000000000000000000000000000000000000010000000000305543
 ```
 
 4. pack action data `setvoter` to set voter of proposal:
 
 ```bash
 cleos convert pack_action_data governance setvoter '["community111", 2, 0, [0, 0, [], [], [], 0, ["corona"]]]'
-1042f0d94d2d254502000000000000000000000000000000000000000000010000000098492f45
+8080f0d94d2d254503000000000000000000000000000000000000000000010000000098492f45
 ```
 
 5. pack action data `setvoterule` to set vote rule of proposal:
 ```bash
 cleos convert pack_action_data governance setvoterule '["community111", 2, 0, 60, 600]'
-1042f0d94d2d25450200000000000000000000000000004e405802000000000000
+8080f0d94d2d25450300000000000000000000000000004e405802000000000000
 ```
 
 6. use action `execcode` to execute above action, amend execution type is the special case, even `setexectype`, `setproposer`, `setvoter`, `setvoterule` action is not exist in the code, but `execcode` action with automatically know it is use for changing the execiton type:
 
 ```bash
-cleos push action governance execcode '["community111", "sally", 2, [["setexectype", "1042f0d94d2d254502000000000000000100"], ["setapprotype", "1042f0d94d2d254502000000000000000001"], ["setproposer", "1042f0d94d2d254502000000000000000000000000000000000000000000010000000000305543"], ["setvoter", "1042f0d94d2d254502000000000000000000000000000000000000000000010000000098492f45"], ["setvoterule", "1042f0d94d2d25450200000000000000000000000000004e405802000000000000"]]]' -p sally
+cleos push action governance execcode '["community111", "sally", 2, [["setexectype", "8080f0d94d2d254503000000000000000100"], ["setapprotype", "8080f0d94d2d254503000000000000000001"], ["setproposer", "8080f0d94d2d254503000000000000000000000000000000000000000000010000000000305543"], ["setvoter", "8080f0d94d2d254503000000000000000000000000000000000000000000010000000098492f45"], ["setvoterule", "8080f0d94d2d25450300000000000000000000000000004e405802000000000000"]]]' -p sally
 ```
 
 
 7. get code and codevoterule table to check:
 
 ```bash
-$ cleos get table governance community111 codes
+$ cleos get table governance community111 v1.code
 {
       "code_id": 2,
       "code_name": "co.access",
@@ -894,7 +973,7 @@ $ cleos get table governance community111 codes
         "refer_id": 0
 }
 
-$ cleos get table governance community111 codevoterule
+$ cleos get table governance community111 v1.codevote
 {
   "rows": [{
       "code_id": 3,
@@ -945,45 +1024,45 @@ $ cleos get table governance community111 codevoterule
 ```bash
 // last parameter is identify set for amendment code (1 is set for amendment code, 0 is set for code)
 $ cleos convert pack_action_data governance setexectype '["community111", 2, 1, 1]'
-1042f0d94d2d254502000000000000000101
+8080f0d94d2d254503000000000000000101
 ```
 
 2. pack `setapprotype` action data to set approval type of code proposal (approval type 1 is approval consensus):
 ```bash
 $ cleos convert pack_action_data governance setapprotype '["community111", 2, 1, 1]'
-1042f0d94d2d254502000000000000000101
+8080f0d94d2d254503000000000000000101
 ```
 
 3. pack setproposer action data to set proposer right holder of `co.access` with code_id 3:
 
 ```bash
 $ cleos convert pack_action_data governance setproposer '["community111", 2, 1, [0, 0, [], [], [], 0, ["chen"]]]'
-1042f0d94d2d254502000000000000000100000000000000000000000000010000000000305543
+8080f0d94d2d254503000000000000000100000000000000000000000000010000000000305543
 ```
 
 4. pack action data `setvoter` to set voter of proposal:
 
 ```bash
 cleos convert pack_action_data governance setvoter '["community111", 2, 1, [0, 0, [], [], [], 0, ["corona"]]]'
-1042f0d94d2d254502000000000000000100000000000000000000000000010000000098492f45
+8080f0d94d2d254503000000000000000100000000000000000000000000010000000098492f45
 ```
 
 5. pack action data `setvoterule` to set vote rule of proposal:
 ```bash
 cleos convert pack_action_data governance setvoterule '["community111", 2, 1, 60, 600]'
-1042f0d94d2d25450200000000000000010000000000004e405802000000000000
+8080f0d94d2d25450300000000000000010000000000004e405802000000000000
 ```
 
 6. use action `execcode` to execute above action, amend execution type is the special case, even `setexectype`, `setproposer`, `setvoter`, `setvoterule` action is not exist in the code, but `execcode` action with automatically know it is use for changing the execiton type:
 
 ```bash
-cleos push action governance execcode '["community111", "sally", 2, [["setapprotype", "1042f0d94d2d254502000000000000000101"], ["setproposer", "1042f0d94d2d254502000000000000000100000000000000000000000000010000000000305543"], ["setvoter", "1042f0d94d2d254502000000000000000100000000000000000000000000010000000098492f45"], ["setvoterule", "1042f0d94d2d25450200000000000000010000000000004e405802000000000000"], ["setexectype", "1042f0d94d2d254502000000000000000101"]]]' -p quocleplayer
+cleos push action governance execcode '["community111", "sally", 2, [["setapprotype", "8080f0d94d2d254503000000000000000101"], ["setproposer", "8080f0d94d2d254503000000000000000100000000000000000000000000010000000000305543"], ["setvoter", "8080f0d94d2d254503000000000000000100000000000000000000000000010000000098492f45"], ["setvoterule", "8080f0d94d2d25450300000000000000010000000000004e405802000000000000"], ["setexectype", "8080f0d94d2d254503000000000000000101"]]]' -p quocleplayer
 ```
 
 7. get code and amenvoterule table to check:
 
 ```bash
-$ cleos get table governance community111 codes
+$ cleos get table governance community111 v1.code
 {
       "code_id": 2,
       "code_name": "co.access",
@@ -998,7 +1077,7 @@ $ cleos get table governance community111 codes
         "refer_id": 0
 }
 
-$ cleos get table governance community111 amenvoterule
+$ cleos get table governance community111 v1.amenvote
 {
   "rows": [{
       "code_id": 2,
@@ -1218,7 +1297,7 @@ cleos push action governance execproposal '[community111, newpos]' -p sally
 Three corresponding code of positions have been created. `po.appoint` with code id 7, `po.config` with code id 7, `po.dismiss` with code id 6 and `po.dissmiss` with code id 8.
 
 ```bash
-cleos get table governance community111 positions
+cleos get table governance community111 v1.position
 {
   "rows": [{
       "pos_id": 0,
