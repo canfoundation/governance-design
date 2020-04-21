@@ -288,7 +288,7 @@ private:
         return static_cast<uint128_t>(type)  | static_cast<uint128_t>(reference_id) << 64;
     }
 
-    TABLE communityf
+    TABLE v1_community
     {
         name community_account;
         name creator;
@@ -300,31 +300,34 @@ private:
         uint64_t by_creator() const { return creator.value; }
         uint64_t primary_key() const { return community_account.value; }
 
-        EOSLIB_SERIALIZE( communityf, (community_account)(creator)(community_name)(member_badge)(community_url)(description));
+        EOSLIB_SERIALIZE( v1_community, (community_account)(creator)(community_name)(member_badge)(community_url)(description));
     };
 
-    typedef eosio::multi_index<"community"_n, communityf, indexed_by< "by.creator"_n, const_mem_fun<communityf, uint64_t, &communityf::by_creator>>> community_table;
+    typedef eosio::multi_index<"v1.community"_n, v1_community, indexed_by< "by.creator"_n, const_mem_fun<v1_community, uint64_t, &v1_community::by_creator>>> v1_community_table;
 
-    TABLE comunity_member
+    TABLE v1_comunity_member
     {
         name member;
 
         uint64_t primary_key() const { return member.value; }
+
+        EOSLIB_SERIALIZE( v1_comunity_member, (member));
     };
 
-    typedef eosio::multi_index<"members"_n, comunity_member> members_table;
+    typedef eosio::multi_index<"v1.member"_n, v1_comunity_member> v1_member_table;
 
-    TABLE accession
+    TABLE v1_accession
     {
         RightHolder right_access;
 
-        EOSLIB_SERIALIZE( accession, (right_access));
+        EOSLIB_SERIALIZE( v1_accession, (right_access));
     };
 
-    typedef eosio::singleton<"accession"_n, accession> accession_table;
+    typedef eosio::singleton<"v1.access"_n, v1_accession> v1_accession_table;
+    typedef eosio::multi_index<"v1.access"_n, v1_accession> v1_faccession_table;
 
     // table codes with type sole decision with scope is community_creator
-    TABLE codef
+    TABLE v1_code
     {
         uint64_t code_id;
         name code_name;
@@ -338,16 +341,16 @@ private:
         uint64_t by_code_name() const { return code_name.value; }
         uint128_t by_reference_id() const { return build_reference_id(code_type.refer_id, code_type.type); }
 
-        EOSLIB_SERIALIZE( codef, (code_id)(code_name)(contract_name)(code_actions)(code_exec_type)(amendment_exec_type)(code_type));
+        EOSLIB_SERIALIZE( v1_code, (code_id)(code_name)(contract_name)(code_actions)(code_exec_type)(amendment_exec_type)(code_type));
     };
 
-    typedef eosio::multi_index<"codes"_n, codef, 
-        indexed_by< "by.code.name"_n, const_mem_fun<codef, uint64_t, &codef::by_code_name>>,
-        indexed_by< "by.refer.id"_n, const_mem_fun<codef, uint128_t, &codef::by_reference_id>>
-        > code_table;
+    typedef eosio::multi_index<"v1.code"_n, v1_code, 
+        indexed_by< "by.code.name"_n, const_mem_fun<v1_code, uint64_t, &v1_code::by_code_name>>,
+        indexed_by< "by.refer.id"_n, const_mem_fun<v1_code, uint128_t, &v1_code::by_reference_id>>
+        > v1_code_table;
 
     // table code collective rule with scope is community_creator
-    TABLE collective_decision
+    TABLE v1_collective_decision
     {
         uint64_t code_id;
         uint64_t vote_duration;
@@ -359,32 +362,32 @@ private:
 
         uint64_t primary_key() const { return code_id; }
 
-        EOSLIB_SERIALIZE( collective_decision, (code_id)(vote_duration)(pass_rule)(approval_type)(right_proposer)(right_approver)(right_voter));
+        EOSLIB_SERIALIZE( v1_collective_decision, (code_id)(vote_duration)(pass_rule)(approval_type)(right_proposer)(right_approver)(right_voter));
     };
 
-    typedef eosio::multi_index<"codevoterule"_n, collective_decision> code_collective_decision_table;
+    typedef eosio::multi_index<"v1.codevote"_n, v1_collective_decision> v1_code_collective_decision_table;
 
     // table amendment collective rule with scope is community_creator to store collective rule of amemdment code
-    typedef eosio::multi_index<"amenvoterule"_n, collective_decision> ammend_collective_decision_table;
+    typedef eosio::multi_index<"v1.amenvote"_n, v1_collective_decision> v1_ammend_collective_decision_table;
 
     // table code collective rule with scope is community_creator
-    TABLE sole_decision
+    TABLE v1_sole_decision
     {
         uint64_t code_id;
         RightHolder right_executor;
 
         uint64_t primary_key() const { return code_id; }
 
-        EOSLIB_SERIALIZE( sole_decision, (code_id)(right_executor));
+        EOSLIB_SERIALIZE( v1_sole_decision, (code_id)(right_executor));
     };
 
-    typedef eosio::multi_index<"codeexecrule"_n, sole_decision> code_sole_decision_table;
+    typedef eosio::multi_index<"v1.codeexec"_n, v1_sole_decision> v1_code_sole_decision_table;
 
     // table amendment collective rule with scope is community_creator to store collective rule of amemdment code
-    typedef eosio::multi_index<"amenexecrule"_n, sole_decision> amend_sole_decision_table;
+    typedef eosio::multi_index<"v1.amenexec"_n, v1_sole_decision> v1_amend_sole_decision_table;
 
     // table code proposals with scope is community_creator
-    TABLE code_proposalf
+    TABLE v1_code_proposal
     {
         name proposal_name;
         name proposer;
@@ -400,16 +403,16 @@ private:
         uint64_t by_proposer() const { return proposer.value; }
         uint64_t by_code_id() const { return code_id; }
 
-        EOSLIB_SERIALIZE( code_proposalf, (proposal_name)(proposer)(voted_percent)(code_id)(code_actions)(voters_detail)(proposal_status)(propose_time)(exec_at));
+        EOSLIB_SERIALIZE( v1_code_proposal, (proposal_name)(proposer)(voted_percent)(code_id)(code_actions)(voters_detail)(proposal_status)(propose_time)(exec_at));
     };
 
-    typedef eosio::multi_index<"coproposals"_n, code_proposalf,
-        indexed_by< "by.proposer"_n, const_mem_fun<code_proposalf, uint64_t, &code_proposalf::by_proposer>>,
-        indexed_by< "by.code.id"_n, const_mem_fun<code_proposalf, uint64_t, &code_proposalf::by_code_id>>
-        > code_proposals_table;
+    typedef eosio::multi_index<"v1.cproposal"_n, v1_code_proposal,
+        indexed_by< "by.proposer"_n, const_mem_fun<v1_code_proposal, uint64_t, &v1_code_proposal::by_proposer>>,
+        indexed_by< "by.code.id"_n, const_mem_fun<v1_code_proposal, uint64_t, &v1_code_proposal::by_code_id>>
+        > v1_code_proposals_table;
 
     // table positions with scope is community_account
-    TABLE positionf {
+    TABLE v1_position {
         uint64_t pos_id;
         string pos_name;
         uint64_t max_holder = 0;
@@ -419,12 +422,12 @@ private:
 
         uint64_t primary_key() const { return pos_id; }
 
-        EOSLIB_SERIALIZE( positionf, (pos_id)(pos_name)(max_holder)(holders)(fulfillment_type)(refer_codes));
+        EOSLIB_SERIALIZE( v1_position, (pos_id)(pos_name)(max_holder)(holders)(fulfillment_type)(refer_codes));
     };
-    typedef eosio::multi_index<"positions"_n, positionf> position_table;
+    typedef eosio::multi_index<"v1.position"_n, v1_position> v1_position_table;
 
     // table executed rule with scope is community_account
-    TABLE election_rule {
+    TABLE v1_election_rule {
         uint64_t pos_id;
         uint64_t term;
         time_point next_term_start_at;
@@ -434,40 +437,40 @@ private:
 
         uint64_t primary_key() const { return pos_id; }
 
-        EOSLIB_SERIALIZE( election_rule, (pos_id)(term)(next_term_start_at)(voting_period)(pos_candidates)(pos_voters));
+        EOSLIB_SERIALIZE( v1_election_rule, (pos_id)(term)(next_term_start_at)(voting_period)(pos_candidates)(pos_voters));
     };
         
-    typedef eosio::multi_index<"fillingrule"_n, election_rule> election_table;    
+    typedef eosio::multi_index<"v1.filling"_n, v1_election_rule> v1_election_table;    
 
     // position proposals with scope is community_account
-    TABLE pos_proposal {
+    TABLE v1_pos_proposal {
         uint64_t pos_id;
         uint64_t pos_proposal_id;
         uint8_t pos_proposal_status;
         time_point approved_at;
         uint64_t primary_key() const { return pos_id; }
 
-        EOSLIB_SERIALIZE( pos_proposal, (pos_id)(pos_proposal_id)(pos_proposal_status)(approved_at));
+        EOSLIB_SERIALIZE( v1_pos_proposal, (pos_id)(pos_proposal_id)(pos_proposal_status)(approved_at));
     };
-    typedef eosio::multi_index<"posproposal"_n, pos_proposal> posproposal_table;
+    typedef eosio::multi_index<"v1.pproposal"_n, v1_pos_proposal> v1_posproposal_table;
 
     // position proposals with scope is community_account
-    TABLE pos_candidate {
+    TABLE v1_pos_candidate {
         name cadidate;
         vector<name> voters;
         uint64_t primary_key() const { return cadidate.value; }
         double by_voted_percent() const { return static_cast<double>(-voters.size()); }
 
-        EOSLIB_SERIALIZE( pos_candidate, (cadidate)(voters));
+        EOSLIB_SERIALIZE( v1_pos_candidate, (cadidate)(voters));
     };
-    typedef eosio::multi_index<"poscandidate"_n, pos_candidate,indexed_by<"byvoted"_n, const_mem_fun<pos_candidate, double, &pos_candidate::by_voted_percent>>> poscandidate_table;
+    typedef eosio::multi_index<"v1.candidate"_n, v1_pos_candidate,indexed_by<"byvoted"_n, const_mem_fun<v1_pos_candidate, double, &v1_pos_candidate::by_voted_percent>>> v1_poscandidate_table;
 	/*
 	* global singelton table, used for position id building
 	* Scope: self
 	*/
-	TABLE global {
+	TABLE v1_global {
 		  
-		global(){}
+		v1_global(){}
 		uint64_t posproposed_id	= 0;
         name community_creator_name = "c"_n;
         name cryptobadge_contract_name = "badge"_n;
@@ -481,7 +484,7 @@ private:
         asset init_cpu = asset(1'0000, this->core_symbol);
         asset min_active_contract = asset(10'0000, this->core_symbol);
 
-		EOSLIB_SERIALIZE( global, 
+		EOSLIB_SERIALIZE( v1_global, 
             (posproposed_id)
             (community_creator_name)
             (cryptobadge_contract_name)
@@ -494,9 +497,9 @@ private:
             (min_active_contract)
         );
 	};
-    typedef eosio::singleton< "global"_n, global> global_table;
-    typedef eosio::multi_index<"global"_n, global> fglobal_table;
-    global _config;
+    typedef eosio::singleton< "v1.global"_n, v1_global> v1_global_table;
+    typedef eosio::multi_index<"v1.global"_n, v1_global> v1_fglobal_table;
+    v1_global _config;
 
     // refer from tiger token contract
     TABLE account {
@@ -510,7 +513,7 @@ private:
     typedef eosio::multi_index< "accounts"_n, account > accounts;
 
     // refer from crypto-badge contract
-	TABLE ccert
+	TABLE v1_cert
 	{
 		uint64_t id;
 		uint64_t badge_id;
@@ -533,9 +536,9 @@ private:
 		}
 	};
 
-	typedef eosio::multi_index<"v1.certs"_n, ccert,
-							   eosio::indexed_by<"badgeid"_n, eosio::const_mem_fun<ccert, uint64_t, &ccert::by_badge_id>>,
-							   eosio::indexed_by<"owner"_n, eosio::const_mem_fun<ccert, uint64_t, &ccert::by_owner>>> ccerts;
+	typedef eosio::multi_index<"v1.cert"_n, v1_cert,
+							   eosio::indexed_by<"badgeid"_n, eosio::const_mem_fun<v1_cert, uint64_t, &v1_cert::by_badge_id>>,
+							   eosio::indexed_by<"owner"_n, eosio::const_mem_fun<v1_cert, uint64_t, &v1_cert::by_owner>>> v1_cert_table;
 
     TABLE proposal {
         name                            proposal_name;
@@ -546,5 +549,5 @@ private:
 
     typedef eosio::multi_index< "proposal"_n, proposal > multisig_proposals;
 
-    community_table _communities;
+    v1_community_table _communities;
 };
