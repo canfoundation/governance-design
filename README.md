@@ -1,6 +1,6 @@
 # governance-design
 
-## Version : 1.1.0
+## Version : 2.0.0
 
 This repository is a provided following contracts:
 
@@ -10,8 +10,9 @@ This repository is a provided following contracts:
 Dependencies:
 * [can v1.0.x](https://github.com/canfoundation/CAN/releases/tag/can-v1.0.0)
 * [eosio.cdt v1.7.x](https://github.com/EOSIO/eosio.cdt/releases/tag/v1.7.0)
+* [crypto-badge v2.0.x](https://github.com/canfoundation/cryptobadge/releases/tag/v2.0.0)
 
-To build the contracts 
+## Build
 
 ```
 cd community
