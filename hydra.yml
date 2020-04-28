@@ -1,0 +1,7 @@
+contracts:
+  community:
+    abi: test/community/community.abi
+    name: community
+    wasm: test/community/community.wasm
+    fixturesDir: test/init-data-test/
+options: null

@@ -1,0 +1,213 @@
+{
+  "community1.c": [{
+    "code_id": 0,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [
+        1
+      ],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": []
+    }
+  },{
+    "code_id": 1,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [
+        1
+      ],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": []
+    }
+  },{
+    "code_id": 2,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [
+        1
+      ],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": []
+    }
+  },{
+    "code_id": 3,
+    "right_executor": {
+      "is_anyone": 1,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [
+        1
+      ],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": []
+    }
+  },{
+    "code_id": 4,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [
+        1
+      ],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": []
+    }
+  },{
+    "code_id": 5,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [
+        1
+      ],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": []
+    }
+  },{
+    "code_id": 6,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [
+        1
+      ],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": []
+    }
+  },{
+    "code_id": 7,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": [
+        "cifdemoweb"
+      ]
+    }
+  },{
+    "code_id": 8,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": [
+        "cifdemoweb"
+      ]
+    }
+  },{
+    "code_id": 9,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": [
+        "cifdemoweb"
+      ]
+    }
+  },
+  {
+    "code_id": 10,
+    "right_executor": {
+      "is_anyone": 1,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": [
+      ]
+    }
+  },
+  {
+    "code_id": 11,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 1,
+      "required_badges": [],
+      "required_positions": [],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": [
+      ]
+    }
+  },
+  {
+    "code_id": 12,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [ 10 ],
+      "required_positions": [],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": [
+      ]
+    }
+  },
+  {
+    "code_id": 13,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [ ],
+      "required_positions": [ 1 ],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": [
+      ]
+    }
+  },
+  {
+    "code_id": 14,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": [
+        "daniel111111"
+      ]
+    }
+  },
+  {
+    "code_id": 15,
+    "right_executor": {
+      "is_anyone": 0,
+      "is_any_community_member": 0,
+      "required_badges": [],
+      "required_positions": [1],
+      "required_tokens": [],
+      "required_exp": 0,
+      "accounts": [
+      ]
+    }
+  }
+  ]
+}

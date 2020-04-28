@@ -1,4 +1,3 @@
-
 #include "../include/community.hpp"
 #include "exchange_state.cpp"
 #include <eosio/permission.hpp>
@@ -2470,6 +2469,29 @@ bool community::is_amend_action(name calling_action) {
            calling_action == set_vote_rule_action;
 }
 
+#ifdef IS_TEST
+#define EOSIO_ABI_CUSTOM(TYPE, MEMBERS)                                                       \
+    extern "C"                                                                                \
+    {                                                                                         \
+        void apply(uint64_t receiver, uint64_t code, uint64_t action)                         \
+        {                                                                                     \
+            HYDRA_APPLY_FIXTURE_ACTION(community)                                             \
+            auto self = receiver;                                                             \
+            if (code == self || code == "eosio.token"_n.value || action == "onerror"_n.value) \
+            {                                                                                 \
+                if (action == "transfer"_n.value)                                             \
+                {                                                                             \
+                    check(code == "eosio.token"_n.value, "Must transfer Token");              \
+                }                                                                             \
+                switch (action)                                                               \
+                {                                                                             \
+                    EOSIO_DISPATCH_HELPER(TYPE, MEMBERS)                                      \
+                }                                                                             \
+                /* does not allow destructor of thiscontract to run: eosio_exit(0); */        \
+            }                                                                                 \
+        }                                                                                     \
+    }
+#else
 #define EOSIO_ABI_CUSTOM(TYPE, MEMBERS)                                                       \
     extern "C"                                                                                \
     {                                                                                         \
@@ -2490,6 +2512,7 @@ bool community::is_amend_action(name calling_action) {
             }                                                                                 \
         }                                                                                     \
     }
+#endif
 
 EOSIO_ABI_CUSTOM(community, 
 (setapprotype)
