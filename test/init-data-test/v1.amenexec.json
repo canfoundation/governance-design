@@ -207,6 +207,32 @@
         "accounts": [
         ]
       }
+    },
+    {
+      "code_id": 16,
+      "right_executor": {
+        "is_anyone": 0,
+        "is_any_community_member": 0,
+        "required_badges": [],
+        "required_positions": [1],
+        "required_tokens": [],
+        "required_exp": 0,
+        "accounts": [
+        ]
+      }
+    },
+    {
+      "code_id": 17,
+      "right_executor": {
+        "is_anyone": 0,
+        "is_any_community_member": 0,
+        "required_badges": [],
+        "required_positions": [1],
+        "required_tokens": [],
+        "required_exp": 0,
+        "accounts": [
+        ]
+      }
     }
   ]
 }
