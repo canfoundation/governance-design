@@ -7,11 +7,7 @@
     "test": "jest"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@klevoya/hydra": "1.2.0",
-=======
-    "@klevoya/hydra": "1.1.0",
->>>>>>> feat/#34 update test for community
     "jest": "^25.1.0"
   },
   "devDependencies": {
