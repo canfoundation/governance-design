@@ -1,0 +1,12 @@
+{
+  "governance": [
+    {
+      "community_account": "community1.c",
+      "creator": "creatortest",
+      "community_name": "community 1",
+      "member_badge": [],
+      "community_url": "http://localhost:3000/create-community",
+      "description": "http://localhost:3000/create-community"
+    }
+  ]
+}

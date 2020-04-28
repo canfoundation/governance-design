@@ -1,3 +1,5 @@
+// #define IS_TEST
+
 #include <eosio/eosio.hpp>
 #include <eosio/multi_index.hpp>
 #include <eosio/print.hpp>
@@ -6,7 +8,10 @@
 #include <eosio/singleton.hpp>
 #include <eosio/crypto.hpp>
 #include <math.h>
-// #include "exchange_state.hpp"
+
+#ifdef IS_TEST
+#include "../../test/hydra.hpp"
+#endif
 
 using namespace eosio;
 using namespace std;
@@ -542,4 +547,15 @@ private:
     typedef eosio::multi_index< "proposal"_n, proposal > multisig_proposals;
 
     v1_community_table _communities;
+
+#ifdef IS_TEST
+public: 
+    HYDRA_FIXTURE_ACTION(
+            ((v1.community)(v1_community)(v1_community_table))
+            ((v1.code)(v1_code)(v1_code_table))
+            ((v1.position)(v1_position)(v1_position_table))
+            ((v1.codeexec)(v1_sole_decision)(v1_code_sole_decision_table))
+            ((v1.amenexec)(v1_sole_decision)(v1_amend_sole_decision_table))
+    )
+#endif
 };
