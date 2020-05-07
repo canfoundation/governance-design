@@ -516,7 +516,6 @@ ACTION dismisspos(name community_account, uint64_t pos_id, name holder, const st
 ```c++
 ACTION createbadge(
         name community_account,
-        uint64_t badge_id,
         uint8_t issue_type,
         name badge_propose_name,
         uint8_t issue_exec_type,
@@ -530,7 +529,6 @@ ACTION createbadge(
     );
 ```
 - **community_account**: community account name,
-- **badge_id**: id of badge,
 - **issue_type**: badge issue type, refer to [document](https://docs.google.com/document/edit?hgd=1&id=1ZRQLixZ1_r-8xgYnkyWP0WfHBbSpcIKbOJ6RYg6XMXc#)
 - **badge_propose_name**: multisig proposal name to create badge,
 - **issue_exec_type**: SOLE_EXECUTION or COLLECTIVE_EXECUTION, execution type of issue badge code of this badge,
@@ -552,28 +550,12 @@ ACTION configbadge(
         uint64_t badge_id,
         uint8_t issue_type,
         name update_badge_proposal_name,
-        uint8_t issue_exec_type,
-        RightHolder right_issue_sole_executor,
-        RightHolder right_issue_proposer,
-        uint8_t issue_approval_type,
-        RightHolder right_issue_approver,
-        RightHolder right_issue_voter,
-        double issue_pass_rule,
-        uint64_t issue_vote_duration
     );
 ```
 - **community_account**: community account name,
 - **badge_id**: id of badge,
 - **issue_type**: badge issue type, refer to [document](https://docs.google.com/document/edit?hgd=1&id=1ZRQLixZ1_r-8xgYnkyWP0WfHBbSpcIKbOJ6RYg6XMXc#)
 - **update_badge_proposal_name**: multisig proposal name to update badge,
-- **issue_exec_type**: SOLE_EXECUTION or COLLECTIVE_EXECUTION, execution type of issue badge code of this badge,
-- **right_issue_sole_executor**: in case of issue_exec_type is SOLE_EXECUTION, Right Holder for sole decision of issue code
-- **right_issue_proposer**: in case of issue_exec_type is COLLECTIVE_EXECUTION, Right Holder for who can propose issue badge
-- **issue_approval_type**: SOLE_APPROVAL - approver can approve and execute code right a way or APPROVAL_CONSENSUS - voter vote for proposal, if majority of voter voted, proposal can be executed,
-- **right_issue_approver**: in case of issue_approval_type is SOLE_APPROVAL, Right Holder for who can approve issue badge proposal
-- **right_issue_voter**: in case of issue_approval_type is APPROVAL_CONSENSUS, Right Holder for who can vote for issue badge proposal
-- **issue_pass_rule**: perent of voted for proposal to be pass,
-- **issue_vote_duration**: duration to vote for proposal
 
 ---
 
