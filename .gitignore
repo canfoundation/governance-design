@@ -1,5 +1,5 @@
 .vscode
 *.abi
 *.wasm
-node_modules
 .idea
+node_modules

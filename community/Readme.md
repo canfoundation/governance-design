@@ -894,7 +894,72 @@ cleos get table governance24 community314 v1.access
   - code execution right: is the requirement for the one who has right to execute this code store in `codevoterule` and `codeexecrule` table
   - amendment execution right: is the requirement for the one who has right to set right for code_execution_right and amendment_execution_right store in `amenvoterule` and `amenexecrule` table
 
-#### set right holder for code execution right
+#### set sole execution right holder for code
+
+1. find code you want to change sole execution right
+
+```
+cleos get table governance 4krptobdge.c v1.code --index 2 --key-type i64 -L ba.create -U ba.create
+{
+  "rows": [{
+      "code_id": 4,
+      "code_name": "ba.create",
+      "contract_name": "governance",
+      "code_actions": [
+        "createbadge"
+      ],
+      "code_exec_type": 0,
+      "amendment_exec_type": 0,
+      "code_type": {
+        "type": 0,
+        "refer_id": 0
+      }
+    }
+  ],
+  "more": false,
+  "next_key": ""
+}
+```
+
+2. pack setsoleexec action data to set sole execution right holder for code
+
+```
+// [ community_account, code_id, is_amend_code, [is_anyone, is_any_community_member, required_badges, required_positions, required_tokens, required_exp, accounts] ]
+$ cleos -u https://stagenet.canfoundation.io convert pack_action_data governance setsoleexec '["4krptobdge.c", 4, 0, [0, 0, [], [], [], 0, ["daniel111111"]]]'
+808062e9d05c2f2404000000000000000000000000000000000000000000011042082144e5a649
+```
+
+3. execute code to set sole execution right
+```
+cleos push action governance execcode '["4krptobdge.c", "sale1", 4, [["setsoleexec", "808062e9d05c2f2404000000000000000000000000000000000000000000011042082144e5a649"]]]' -p sale1
+```
+
+4. get code execution rule table again to check
+```
+$ cleos get table governance 4krptobdge.c v1.codeexec -L 4 -U 4
+{
+  "rows": [{
+      "code_id": 4,
+      "right_executor": {
+        "is_anyone": 0,
+        "is_any_community_member": 0,
+        "required_badges": [],
+        "required_positions": [],
+        "required_tokens": [],
+        "required_exp": 0,
+        "accounts": [
+          "daniel111111"
+        ]
+      }
+    }
+  ],
+  "more": false,
+  "next_key": ""
+}
+```
+
+
+#### set collective execution right holder for code
 
 1. pack setexectype action data to set execution type of `co.access` with code_id 3 to collective decision (1):
 
