@@ -1835,6 +1835,7 @@ ACTION community::createbadge(
     if (issue_exec_type != ExecutionType::COLLECTIVE_DECISION) {
         verify_right_holder_input(community_account, right_issue_sole_executor);
         auto code_exec_type_itr = _code_execution_rule.find(issue_badge_code_id);
+        auto amend_exec_type_itr = _amend_execution_rule.find(issue_badge_code_id);
         if (code_exec_type_itr == _code_execution_rule.end()) {
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = issue_badge_code_id;
@@ -1845,6 +1846,17 @@ ACTION community::createbadge(
                 row.right_executor = right_issue_sole_executor;
             });
         }
+
+        if (amend_exec_type_itr == _amend_execution_rule.end()) {
+            _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
+                row.code_id = issue_badge_code_id;
+                row.right_executor = right_issue_sole_executor;
+            });
+        } else {
+            _amend_execution_rule.modify(amend_exec_type_itr, ram_payer, [&](auto &row) {
+                row.right_executor = right_issue_sole_executor;
+            });
+        }
     }
 
     if (issue_exec_type != ExecutionType::SOLE_DECISION) {
@@ -1852,6 +1864,7 @@ ACTION community::createbadge(
         verify_right_holder_input(community_account, right_issue_approver);
         verify_right_holder_input(community_account, right_issue_voter);
         auto code_vote_rule_itr = _code_vote_rule.find(issue_badge_code_itr->code_id);
+        auto amend_vote_rule_itr = _amend_vote_rule.find(issue_badge_code_itr->code_id);
         if (code_vote_rule_itr == _code_vote_rule.end()) {
             _code_vote_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = issue_badge_code_id;
@@ -1864,6 +1877,27 @@ ACTION community::createbadge(
             });
         } else {
             _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
+                row.right_proposer = right_issue_proposer;
+                row.right_approver = right_issue_approver;
+                row.right_voter = right_issue_voter;
+                row.approval_type = issue_approval_type;
+                row.pass_rule = issue_pass_rule;
+                row.vote_duration = issue_vote_duration;
+            });
+        }
+
+        if (amend_vote_rule_itr == _amend_vote_rule.end()) {
+            _amend_vote_rule.emplace(ram_payer, [&](auto &row) {
+                row.code_id = issue_badge_code_id;
+                row.right_proposer = right_issue_proposer;
+                row.right_approver = right_issue_approver;
+                row.right_voter = right_issue_voter;
+                row.approval_type = issue_approval_type;
+                row.pass_rule = issue_pass_rule;
+                row.vote_duration = issue_vote_duration;
+            });
+        } else {
+            _amend_vote_rule.modify(amend_vote_rule_itr, ram_payer, [&](auto &row) {
                 row.right_proposer = right_issue_proposer;
                 row.right_approver = right_issue_approver;
                 row.right_voter = right_issue_voter;
@@ -1984,15 +2018,7 @@ ACTION community::configbadge(
         name community_account,
         uint64_t badge_id,
         uint8_t issue_type,
-        name update_badge_proposal_name,
-        uint8_t issue_exec_type,
-        RightHolder right_issue_sole_executor,
-        RightHolder right_issue_proposer,
-        uint8_t issue_approval_type,
-        RightHolder right_issue_approver,
-        RightHolder right_issue_voter,
-        double issue_pass_rule,
-        uint64_t issue_vote_duration
+        name update_badge_proposal_name
 ) {
     require_auth(community_account);
     
@@ -2063,59 +2089,15 @@ ACTION community::configbadge(
             row.code_name = issue_badge_code_name;
             row.contract_name = get_self();
             row.code_actions = code_actions;
-            row.code_exec_type = issue_exec_type;
             row.code_type = {CodeTypeEnum::BADGE_ISSUE, badge_id};
         });
         issue_badge_code_id = new_issue_badge_code->code_id;
     } else {
         getByCodeReferId.modify(issue_badge_code_itr, ram_payer, [&](auto &row) {
             row.code_name = issue_badge_code_name;
-            row.code_exec_type = issue_exec_type;
             row.code_type = {CodeTypeEnum::BADGE_ISSUE, badge_id};
         });
         issue_badge_code_id = issue_badge_code_itr->code_id;
-    }
-
-    if (issue_exec_type != ExecutionType::COLLECTIVE_DECISION) {
-        verify_right_holder_input(community_account, right_issue_sole_executor);
-        auto code_exec_type_itr = _code_execution_rule.find(issue_badge_code_itr->code_id);
-        if (code_exec_type_itr == _code_execution_rule.end()) {
-            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = issue_badge_code_id;
-                row.right_executor = right_issue_sole_executor;
-            });
-        } else {
-            _code_execution_rule.modify(code_exec_type_itr, ram_payer, [&](auto &row) {
-                row.right_executor = right_issue_sole_executor;
-            });
-        }
-    }
-
-    if (issue_exec_type != ExecutionType::SOLE_DECISION) {
-        verify_right_holder_input(community_account, right_issue_proposer);
-        verify_right_holder_input(community_account, right_issue_approver);
-        verify_right_holder_input(community_account, right_issue_voter);
-        auto code_vote_rule_itr = _code_vote_rule.find(issue_badge_code_itr->code_id);
-        if (code_vote_rule_itr == _code_vote_rule.end()) {
-            _code_vote_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = issue_badge_code_id;
-                row.right_proposer = right_issue_proposer;
-                row.right_approver = right_issue_approver;
-                row.right_voter = right_issue_voter;
-                row.approval_type = issue_approval_type;
-                row.pass_rule = issue_pass_rule;
-                row.vote_duration = issue_vote_duration;
-            });
-        } else {
-            _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
-                row.right_proposer = right_issue_proposer;
-                row.right_approver = right_issue_approver;
-                row.right_voter = right_issue_voter;
-                row.approval_type = issue_approval_type;
-                row.pass_rule = issue_pass_rule;
-                row.vote_duration = issue_vote_duration;
-            });
-        }
     }
 }
 

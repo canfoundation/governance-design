@@ -234,15 +234,7 @@ public:
         name community_account,
         uint64_t badge_id,
         uint8_t issue_type,
-        name update_badge_proposal_name,
-        uint8_t issue_exec_type,
-        RightHolder right_issue_sole_executor,
-        RightHolder right_issue_proposer,
-        uint8_t issue_approval_type,
-        RightHolder right_issue_approver,
-        RightHolder right_issue_voter,
-        double issue_pass_rule,
-        uint64_t issue_vote_duration
+        name update_badge_proposal_name
     );
 
     ACTION issuebadge(name community_account, name badge_propose_name);
