@@ -516,7 +516,6 @@ ACTION dismisspos(name community_account, uint64_t pos_id, name holder, const st
 ```c++
 ACTION createbadge(
         name community_account,
-        uint64_t badge_id,
         uint8_t issue_type,
         name badge_propose_name,
         uint8_t issue_exec_type,
@@ -530,7 +529,6 @@ ACTION createbadge(
     );
 ```
 - **community_account**: community account name,
-- **badge_id**: id of badge,
 - **issue_type**: badge issue type, refer to [document](https://docs.google.com/document/edit?hgd=1&id=1ZRQLixZ1_r-8xgYnkyWP0WfHBbSpcIKbOJ6RYg6XMXc#)
 - **badge_propose_name**: multisig proposal name to create badge,
 - **issue_exec_type**: SOLE_EXECUTION or COLLECTIVE_EXECUTION, execution type of issue badge code of this badge,
@@ -552,28 +550,12 @@ ACTION configbadge(
         uint64_t badge_id,
         uint8_t issue_type,
         name update_badge_proposal_name,
-        uint8_t issue_exec_type,
-        RightHolder right_issue_sole_executor,
-        RightHolder right_issue_proposer,
-        uint8_t issue_approval_type,
-        RightHolder right_issue_approver,
-        RightHolder right_issue_voter,
-        double issue_pass_rule,
-        uint64_t issue_vote_duration
     );
 ```
 - **community_account**: community account name,
 - **badge_id**: id of badge,
 - **issue_type**: badge issue type, refer to [document](https://docs.google.com/document/edit?hgd=1&id=1ZRQLixZ1_r-8xgYnkyWP0WfHBbSpcIKbOJ6RYg6XMXc#)
 - **update_badge_proposal_name**: multisig proposal name to update badge,
-- **issue_exec_type**: SOLE_EXECUTION or COLLECTIVE_EXECUTION, execution type of issue badge code of this badge,
-- **right_issue_sole_executor**: in case of issue_exec_type is SOLE_EXECUTION, Right Holder for sole decision of issue code
-- **right_issue_proposer**: in case of issue_exec_type is COLLECTIVE_EXECUTION, Right Holder for who can propose issue badge
-- **issue_approval_type**: SOLE_APPROVAL - approver can approve and execute code right a way or APPROVAL_CONSENSUS - voter vote for proposal, if majority of voter voted, proposal can be executed,
-- **right_issue_approver**: in case of issue_approval_type is SOLE_APPROVAL, Right Holder for who can approve issue badge proposal
-- **right_issue_voter**: in case of issue_approval_type is APPROVAL_CONSENSUS, Right Holder for who can vote for issue badge proposal
-- **issue_pass_rule**: perent of voted for proposal to be pass,
-- **issue_vote_duration**: duration to vote for proposal
 
 ---
 
@@ -912,7 +894,72 @@ cleos get table governance24 community314 v1.access
   - code execution right: is the requirement for the one who has right to execute this code store in `codevoterule` and `codeexecrule` table
   - amendment execution right: is the requirement for the one who has right to set right for code_execution_right and amendment_execution_right store in `amenvoterule` and `amenexecrule` table
 
-#### set right holder for code execution right
+#### set sole execution right holder for code
+
+1. find code you want to change sole execution right
+
+```
+cleos get table governance 4krptobdge.c v1.code --index 2 --key-type i64 -L ba.create -U ba.create
+{
+  "rows": [{
+      "code_id": 4,
+      "code_name": "ba.create",
+      "contract_name": "governance",
+      "code_actions": [
+        "createbadge"
+      ],
+      "code_exec_type": 0,
+      "amendment_exec_type": 0,
+      "code_type": {
+        "type": 0,
+        "refer_id": 0
+      }
+    }
+  ],
+  "more": false,
+  "next_key": ""
+}
+```
+
+2. pack setsoleexec action data to set sole execution right holder for code
+
+```
+// [ community_account, code_id, is_amend_code, [is_anyone, is_any_community_member, required_badges, required_positions, required_tokens, required_exp, accounts] ]
+$ cleos -u https://stagenet.canfoundation.io convert pack_action_data governance setsoleexec '["4krptobdge.c", 4, 0, [0, 0, [], [], [], 0, ["daniel111111"]]]'
+808062e9d05c2f2404000000000000000000000000000000000000000000011042082144e5a649
+```
+
+3. execute code to set sole execution right
+```
+cleos push action governance execcode '["4krptobdge.c", "sale1", 4, [["setsoleexec", "808062e9d05c2f2404000000000000000000000000000000000000000000011042082144e5a649"]]]' -p sale1
+```
+
+4. get code execution rule table again to check
+```
+$ cleos get table governance 4krptobdge.c v1.codeexec -L 4 -U 4
+{
+  "rows": [{
+      "code_id": 4,
+      "right_executor": {
+        "is_anyone": 0,
+        "is_any_community_member": 0,
+        "required_badges": [],
+        "required_positions": [],
+        "required_tokens": [],
+        "required_exp": 0,
+        "accounts": [
+          "daniel111111"
+        ]
+      }
+    }
+  ],
+  "more": false,
+  "next_key": ""
+}
+```
+
+
+#### set collective execution right holder for code
 
 1. pack setexectype action data to set execution type of `co.access` with code_id 3 to collective decision (1):
 

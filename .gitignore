@@ -1,3 +1,5 @@
 .vscode
 *.abi
 *.wasm
+.idea
+node_modules
