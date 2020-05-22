@@ -1,0 +1,1466 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "CodeType",
+            "base": "",
+            "fields": [
+                {
+                    "name": "type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "refer_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "RightHolder",
+            "base": "",
+            "fields": [
+                {
+                    "name": "is_anyone",
+                    "type": "bool"
+                },
+                {
+                    "name": "is_any_community_member",
+                    "type": "bool"
+                },
+                {
+                    "name": "required_badges",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "required_positions",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "required_tokens",
+                    "type": "asset[]"
+                },
+                {
+                    "name": "required_exp",
+                    "type": "uint64"
+                },
+                {
+                    "name": "accounts",
+                    "type": "name[]"
+                }
+            ]
+        },
+        {
+            "name": "account",
+            "base": "",
+            "fields": [
+                {
+                    "name": "balance",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "appointpos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "pos_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "holder_accounts",
+                    "type": "name[]"
+                },
+                {
+                    "name": "appoint_reason",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "approvepos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "pos_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "configbadge",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "badge_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "issue_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "update_badge_proposal_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "configpos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "pos_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pos_name",
+                    "type": "string"
+                },
+                {
+                    "name": "max_holder",
+                    "type": "uint64"
+                },
+                {
+                    "name": "filled_through",
+                    "type": "uint8"
+                },
+                {
+                    "name": "term",
+                    "type": "uint64"
+                },
+                {
+                    "name": "next_term_start_at",
+                    "type": "uint64"
+                },
+                {
+                    "name": "voting_period",
+                    "type": "uint64"
+                },
+                {
+                    "name": "right_candidate",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_voter",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "create",
+            "base": "",
+            "fields": [
+                {
+                    "name": "creator",
+                    "type": "name"
+                },
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "community_name",
+                    "type": "string"
+                },
+                {
+                    "name": "member_badge",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "community_url",
+                    "type": "string"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                },
+                {
+                    "name": "create_default_code",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "createacc",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_creator",
+                    "type": "name"
+                },
+                {
+                    "name": "community_acc",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "createbadge",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "issue_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "badge_propose_name",
+                    "type": "name"
+                },
+                {
+                    "name": "issue_exec_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "right_issue_sole_executor",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_issue_proposer",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "issue_approval_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "right_issue_approver",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_issue_voter",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "issue_pass_rule",
+                    "type": "float64"
+                },
+                {
+                    "name": "issue_vote_duration",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "createcode",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_name",
+                    "type": "name"
+                },
+                {
+                    "name": "contract_name",
+                    "type": "name"
+                },
+                {
+                    "name": "code_actions",
+                    "type": "name[]"
+                }
+            ]
+        },
+        {
+            "name": "createpos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "creator",
+                    "type": "name"
+                },
+                {
+                    "name": "pos_name",
+                    "type": "string"
+                },
+                {
+                    "name": "max_holder",
+                    "type": "uint64"
+                },
+                {
+                    "name": "filled_through",
+                    "type": "uint8"
+                },
+                {
+                    "name": "term",
+                    "type": "uint64"
+                },
+                {
+                    "name": "next_term_start_at",
+                    "type": "uint64"
+                },
+                {
+                    "name": "voting_period",
+                    "type": "uint64"
+                },
+                {
+                    "name": "right_candidate",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_voter",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "dismisspos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "pos_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "holder",
+                    "type": "name"
+                },
+                {
+                    "name": "dismissal_reason",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "execcode",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "exec_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code_actions",
+                    "type": "execution_code_data[]"
+                }
+            ]
+        },
+        {
+            "name": "execproposal",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "execution_code_data",
+            "base": "",
+            "fields": [
+                {
+                    "name": "code_action",
+                    "type": "name"
+                },
+                {
+                    "name": "packed_params",
+                    "type": "bytes"
+                }
+            ]
+        },
+        {
+            "name": "initadminpos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "creator",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "initcode",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "creator",
+                    "type": "name"
+                },
+                {
+                    "name": "create_default_code",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "inputmembers",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "added_members",
+                    "type": "name[]"
+                },
+                {
+                    "name": "removed_members",
+                    "type": "name[]"
+                }
+            ]
+        },
+        {
+            "name": "issuebadge",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "badge_propose_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "nominatepos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "pos_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "owner",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "pair_name_int32",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "int32"
+                }
+            ]
+        },
+        {
+            "name": "pair_name_uint64",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "proposal",
+            "base": "",
+            "fields": [
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "packed_transaction",
+                    "type": "bytes"
+                }
+            ]
+        },
+        {
+            "name": "proposecode",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "proposer",
+                    "type": "name"
+                },
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code_actions",
+                    "type": "execution_code_data[]"
+                }
+            ]
+        },
+        {
+            "name": "setaccess",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "right_access",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "setapprotype",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "is_amend_code",
+                    "type": "bool"
+                },
+                {
+                    "name": "approval_type",
+                    "type": "uint8"
+                }
+            ]
+        },
+        {
+            "name": "setapprover",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "is_amend_code",
+                    "type": "bool"
+                },
+                {
+                    "name": "right_approver",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "setconfig",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_creator_name",
+                    "type": "name"
+                },
+                {
+                    "name": "cryptobadge_contract_name",
+                    "type": "name"
+                },
+                {
+                    "name": "token_contract_name",
+                    "type": "name"
+                },
+                {
+                    "name": "ram_payer_name",
+                    "type": "name"
+                },
+                {
+                    "name": "core_symbol",
+                    "type": "symbol"
+                },
+                {
+                    "name": "init_ram_amount",
+                    "type": "uint64"
+                },
+                {
+                    "name": "min_active_contract",
+                    "type": "asset"
+                },
+                {
+                    "name": "init_net",
+                    "type": "asset"
+                },
+                {
+                    "name": "init_cpu",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "setexectype",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "exec_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "is_amend_code",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "setproposer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "is_amend_code",
+                    "type": "bool"
+                },
+                {
+                    "name": "right_proposer",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "setsoleexec",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "is_amend_code",
+                    "type": "bool"
+                },
+                {
+                    "name": "right_sole_executor",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "setvoter",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "is_amend_code",
+                    "type": "bool"
+                },
+                {
+                    "name": "right_voter",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "setvoterule",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "is_amend_code",
+                    "type": "bool"
+                },
+                {
+                    "name": "pass_rule",
+                    "type": "float64"
+                },
+                {
+                    "name": "vote_duration",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "v1_accession",
+            "base": "",
+            "fields": [
+                {
+                    "name": "right_access",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "v1_cert",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "badge_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "badge_revision",
+                    "type": "uint64"
+                },
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "state",
+                    "type": "uint64"
+                },
+                {
+                    "name": "expire_at",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "v1_code",
+            "base": "",
+            "fields": [
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code_name",
+                    "type": "name"
+                },
+                {
+                    "name": "contract_name",
+                    "type": "name"
+                },
+                {
+                    "name": "code_actions",
+                    "type": "name[]"
+                },
+                {
+                    "name": "code_exec_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "amendment_exec_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "code_type",
+                    "type": "CodeType"
+                }
+            ]
+        },
+        {
+            "name": "v1_code_proposal",
+            "base": "",
+            "fields": [
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "proposer",
+                    "type": "name"
+                },
+                {
+                    "name": "voted_percent",
+                    "type": "float64"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code_actions",
+                    "type": "execution_code_data[]"
+                },
+                {
+                    "name": "voters_detail",
+                    "type": "pair_name_int32[]"
+                },
+                {
+                    "name": "proposal_status",
+                    "type": "uint8"
+                },
+                {
+                    "name": "propose_time",
+                    "type": "time_point"
+                },
+                {
+                    "name": "exec_at",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "v1_collective_decision",
+            "base": "",
+            "fields": [
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "vote_duration",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pass_rule",
+                    "type": "float64"
+                },
+                {
+                    "name": "approval_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "right_proposer",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_approver",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "right_voter",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "v1_community",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "creator",
+                    "type": "name"
+                },
+                {
+                    "name": "community_name",
+                    "type": "string"
+                },
+                {
+                    "name": "member_badge",
+                    "type": "uint64[]"
+                },
+                {
+                    "name": "community_url",
+                    "type": "string"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "v1_comunity_member",
+            "base": "",
+            "fields": [
+                {
+                    "name": "member",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "v1_election_rule",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pos_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "term",
+                    "type": "uint64"
+                },
+                {
+                    "name": "next_term_start_at",
+                    "type": "time_point"
+                },
+                {
+                    "name": "voting_period",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pos_candidates",
+                    "type": "RightHolder"
+                },
+                {
+                    "name": "pos_voters",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "v1_global",
+            "base": "",
+            "fields": [
+                {
+                    "name": "posproposed_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "community_creator_name",
+                    "type": "name"
+                },
+                {
+                    "name": "cryptobadge_contract_name",
+                    "type": "name"
+                },
+                {
+                    "name": "token_contract_name",
+                    "type": "name"
+                },
+                {
+                    "name": "ram_payer_name",
+                    "type": "name"
+                },
+                {
+                    "name": "core_symbol",
+                    "type": "symbol"
+                },
+                {
+                    "name": "init_ram_amount",
+                    "type": "uint64"
+                },
+                {
+                    "name": "init_net",
+                    "type": "asset"
+                },
+                {
+                    "name": "init_cpu",
+                    "type": "asset"
+                },
+                {
+                    "name": "min_active_contract",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "v1_pos_candidate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "cadidate",
+                    "type": "name"
+                },
+                {
+                    "name": "voters",
+                    "type": "name[]"
+                }
+            ]
+        },
+        {
+            "name": "v1_pos_proposal",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pos_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pos_proposal_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pos_proposal_status",
+                    "type": "uint8"
+                },
+                {
+                    "name": "approved_at",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "v1_position",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pos_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "pos_name",
+                    "type": "string"
+                },
+                {
+                    "name": "max_holder",
+                    "type": "uint64"
+                },
+                {
+                    "name": "holders",
+                    "type": "name[]"
+                },
+                {
+                    "name": "fulfillment_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "refer_codes",
+                    "type": "pair_name_uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "v1_sole_decision",
+            "base": "",
+            "fields": [
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "right_executor",
+                    "type": "RightHolder"
+                }
+            ]
+        },
+        {
+            "name": "verifyholder",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "execution_type",
+                    "type": "uint8"
+                },
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "is_ammend_holder",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "voteforcode",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "proposal_name",
+                    "type": "name"
+                },
+                {
+                    "name": "approver",
+                    "type": "name"
+                },
+                {
+                    "name": "vote_status",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "voteforpos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "pos_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "voter",
+                    "type": "name"
+                },
+                {
+                    "name": "candidate",
+                    "type": "name"
+                },
+                {
+                    "name": "vote_status",
+                    "type": "bool"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "appointpos",
+            "type": "appointpos",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "approvepos",
+            "type": "approvepos",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "configbadge",
+            "type": "configbadge",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "configpos",
+            "type": "configpos",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "create",
+            "type": "create",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "createacc",
+            "type": "createacc",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "createbadge",
+            "type": "createbadge",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "createcode",
+            "type": "createcode",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "createpos",
+            "type": "createpos",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "dismisspos",
+            "type": "dismisspos",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "execcode",
+            "type": "execcode",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "execproposal",
+            "type": "execproposal",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "initadminpos",
+            "type": "initadminpos",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "initcode",
+            "type": "initcode",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "inputmembers",
+            "type": "inputmembers",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "issuebadge",
+            "type": "issuebadge",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "nominatepos",
+            "type": "nominatepos",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "proposecode",
+            "type": "proposecode",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setaccess",
+            "type": "setaccess",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setapprotype",
+            "type": "setapprotype",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setapprover",
+            "type": "setapprover",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setconfig",
+            "type": "setconfig",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setexectype",
+            "type": "setexectype",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setproposer",
+            "type": "setproposer",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setsoleexec",
+            "type": "setsoleexec",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setvoter",
+            "type": "setvoter",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setvoterule",
+            "type": "setvoterule",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "verifyholder",
+            "type": "verifyholder",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "voteforcode",
+            "type": "voteforcode",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "voteforpos",
+            "type": "voteforpos",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "accounts",
+            "type": "account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "proposal",
+            "type": "proposal",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.access",
+            "type": "v1_accession",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.amenexec",
+            "type": "v1_sole_decision",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.amenvote",
+            "type": "v1_collective_decision",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.candidate",
+            "type": "v1_pos_candidate",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.cert",
+            "type": "v1_cert",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.code",
+            "type": "v1_code",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.codeexec",
+            "type": "v1_sole_decision",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.codevote",
+            "type": "v1_collective_decision",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.community",
+            "type": "v1_community",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.cproposal",
+            "type": "v1_code_proposal",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.filling",
+            "type": "v1_election_rule",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.global",
+            "type": "v1_global",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.member",
+            "type": "v1_comunity_member",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.position",
+            "type": "v1_position",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.pproposal",
+            "type": "v1_pos_proposal",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}
