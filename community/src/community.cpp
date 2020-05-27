@@ -600,7 +600,7 @@ ACTION community::execproposal(name community_account, name proposal_name)
 
     v1_code_proposals_table _proposals(_self, community_account.value);
     auto proposal_itr = _proposals.find(proposal_name.value);
-    check(proposal_itr != _proposals.end(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
+    check(proposal_itr != _proposals.end(), "ERR::VOTE_NOT_FINISH::Proposal does not exist");
 
     v1_code_table _codes(_self, community_account.value);
     auto code_itr = _codes.find(proposal_itr->code_id);
@@ -619,7 +619,7 @@ ACTION community::execproposal(name community_account, name proposal_name)
             check(proposal_itr->propose_time.sec_since_epoch() + collective_exec_itr->vote_duration <= current_time_point().sec_since_epoch(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
 
             // check that code has been accepted by voter or not
-            check(proposal_itr->voted_percent >= collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been aceepted by voter");
+            check(proposal_itr->voted_percent >= collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been accepted by voter");
 
             // check that proposal has been executed or not
             check(proposal_itr->proposal_status != EXECUTED, "ERR::EXECUTED_PROPOSAL::This proposal has been executed");
@@ -642,7 +642,7 @@ ACTION community::execproposal(name community_account, name proposal_name)
             check(proposal_itr->propose_time.sec_since_epoch() + collective_exec_itr->vote_duration <= current_time_point().sec_since_epoch(), "ERR::VOTE_NOT_FINISH::The voting proposal for this code has not been finished yet");
 
             // check that code has been accepted by voter or not
-            check(proposal_itr->voted_percent >= collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been aceepted by voter");
+            check(proposal_itr->voted_percent >= collective_exec_itr->pass_rule, "ERR::CODE_NOT_ACCEPTED::This code has not been accepted by voter");
 
             // check that proposal has been executed or not
             check(proposal_itr->proposal_status != EXECUTED, "ERR::EXECUTED_PROPOSAL::This proposal has been executed");
