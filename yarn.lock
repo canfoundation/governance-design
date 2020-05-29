@@ -451,10 +451,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^3.0.0"
 
-"@klevoya/hydra@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@klevoya/hydra/-/hydra-1.1.0.tgz#d47be17ccad2565b20a6abd94ecd7065d1af53ed"
-  integrity sha512-T9RhtTeTCLJxU0GOib6ioome/LSRCZ+zG58q/pY25L/FIZHTvZh8lFBOdXa4LcRvud5zHXm/h8ZWCx436kKvjA==
+"@klevoya/hydra@1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@klevoya/hydra/-/hydra-1.2.0.tgz#c2b9f1add39b7eed28133d3795706a487c0f8634"
+  integrity sha512-mMYi98ElXRXsR5GGy2Q070MKcYNxLmp+edJ0Hi0KisbjSTzk9EVvxp2+aoK9ErJ83geURgt6qL1RJ7naFRS8Pg==
   dependencies:
     "@altostra/cli-login-auth0" "github:MrToph/altostra-cli-login-auth0"
     "@oclif/command" "^1.5.19"
