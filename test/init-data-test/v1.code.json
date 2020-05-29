@@ -214,6 +214,32 @@
         "type": 0,
         "refer_id": 0
       }
+    },{
+      "code_id": 16,
+      "code_name": "ba.claim",
+      "contract_name": "governance",
+      "code_actions": [
+        "issuebadge"
+      ],
+      "code_exec_type": 0,
+      "amendment_exec_type": 0,
+      "code_type": {
+        "type": 5,
+        "refer_id": 799
+      }
+    },{
+      "code_id": 17,
+      "code_name": "ba.config",
+      "contract_name": "governance",
+      "code_actions": [
+        "configbadge"
+      ],
+      "code_exec_type": 0,
+      "amendment_exec_type": 0,
+      "code_type": {
+        "type": 4,
+        "refer_id": 799
+      }
     }
   ]
 }

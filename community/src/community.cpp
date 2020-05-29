@@ -473,7 +473,18 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
         {
             check(code_itr->code_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::INVALID_EXEC_TYPE::Can not execute collective decision code, please use proposecode action");
             check(std::find(code_itr->code_actions.begin(), code_itr->code_actions.end(), execution_data.code_action) != code_itr->code_actions.end(), "ERR::VERIFY_FAILED::Action doesn't exist.");
-            
+
+            if (code_itr->contract_name == _self) {
+                datastream packed_params_datastream(&execution_data.packed_params[0], execution_data.packed_params.size());
+                name packed_community_account;
+                packed_params_datastream >> packed_community_account;
+                check (packed_community_account == community_account, "ERR::INVALID_PACKED_COMMUNITY_ACCOUNT_PARAM::Specified community account not match with community account in packed params");
+                if (code_itr->code_type.type != CodeTypeEnum::NORMAL ) {
+                    uint64_t packed_refer_id;
+                    packed_params_datastream >> packed_refer_id;
+                    check (code_itr->code_type.refer_id == packed_refer_id, "ERR:INVALID_BADGE_POSITION_CODE::Please use correct code to execute badge/position action");
+                }
+            }
             // Verify Right Holder
             action(
                 permission_level{get_self(), "active"_n},
@@ -486,6 +497,12 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
         }
         else
         {
+            datastream packed_params_datastream(&execution_data.packed_params[0], execution_data.packed_params.size());
+            name packed_community_account;
+            uint64_t packed_code_id;
+            packed_params_datastream >> packed_community_account >> packed_code_id;
+            check (packed_community_account == community_account, "ERR::INVALID_PACKED_COMMUNITY_ACCOUNT_PARAM::Specified community account not match with community account in packed params");
+            check (packed_code_id == code_id, "ERR::INVALID_PACKED_CODE_ID_ACCOUNT_PARAM::Specified code id not match with code id in packed params");
             check(code_itr->amendment_exec_type != ExecutionType::COLLECTIVE_DECISION, "ERR::INVALID_EXEC_TYPE::Can not execute collective decision code, please use proposecode action");
             action(
                 permission_level{get_self(), "active"_n},
