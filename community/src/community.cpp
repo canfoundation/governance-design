@@ -35,6 +35,10 @@ const name BA_Config = "ba.config"_n;
 const name BA_Adopt = "ba.adopt"_n;
 const name BA_Discard = "ba.discard"_n;
 
+const name badge_update_action = "updatebadge"_n;
+const name badge_create_action = "createbadge"_n;
+const name badge_issue_action = "issuebadge"_n;
+
 struct createbadge_params {
 	name issuer;
 	uint64_t badge_id;
@@ -479,10 +483,30 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
                 name packed_community_account;
                 packed_params_datastream >> packed_community_account;
                 check (packed_community_account == community_account, "ERR::INVALID_PACKED_COMMUNITY_ACCOUNT_PARAM::Specified community account not match with community account in packed params");
-                if (code_itr->code_type.type != CodeTypeEnum::NORMAL ) {
+                if (execution_data.code_action == "configpos"_n ||
+                    execution_data.code_action == "appointpos"_n ||
+                    execution_data.code_action == "dismisspos"_n ||
+                    execution_data.code_action == "configbadge"_n
+                    ) {
                     uint64_t packed_refer_id;
                     packed_params_datastream >> packed_refer_id;
                     check (code_itr->code_type.refer_id == packed_refer_id, "ERR:INVALID_BADGE_POSITION_CODE::Please use correct code to execute badge/position action");
+                } else if (execution_data.code_action == "issuebadge"_n) {
+                    name packed_proposal_name;
+                    packed_params_datastream >> packed_proposal_name;
+                    multisig_proposals proptable( "eosio.msig"_n, _config.cryptobadge_contract_name.value );
+                    auto& prop = proptable.get( packed_proposal_name.value, "proposal not found" );
+                    transaction trx;
+                    datastream<const char*> ds( prop.packed_transaction.data(), prop.packed_transaction.size() );
+                    ds >> trx;
+                    for (auto action : trx.actions) {
+                        if (action.account == _config.cryptobadge_contract_name && action.name == badge_issue_action) {
+                            auto cb_data = unpack<issuebadge_params>(&action.data[0], action.data.size());
+
+                            check (cb_data.issuer == community_account, "ERR::ISSUE_BADGE_PROPOSAL_INVALID::Issuer in issue badge proposal not the same with community account");
+                            check (cb_data.badge_id == code_itr->code_type.refer_id, "ERR:INVALID_BADGE_POSITION_CODE::Please use correct code to execute badge/position action");
+                        }
+                    }
                 }
             }
             // Verify Right Holder
@@ -1775,11 +1799,15 @@ ACTION community::createbadge(
     transaction trx;
     datastream<const char*> ds( prop.packed_transaction.data(), prop.packed_transaction.size() );
     ds >> trx;
-	auto cb_data = unpack<createbadge_params>(&trx.actions[0].data[0], trx.actions[0].data.size());
 
-    check (cb_data.issuer == community_account, "ERR::CREATE_BADGE_PROPOSAL_INVALID::Issuer in create badge proposal not the same with community account");
-	
-    uint64_t badge_id = cb_data.badge_id;
+    uint64_t badge_id;
+    for (auto action : trx.actions) {
+        if (action.account == cryptobadge_contract && action.name == badge_create_action) {
+            auto cb_data = unpack<createbadge_params>(&action.data[0], action.data.size());
+            check (cb_data.issuer == community_account, "ERR::CREATE_BADGE_PROPOSAL_INVALID::Issuer in create badge proposal not the same with community account");
+            badge_id = cb_data.badge_id;
+        }
+    }
 
     action(
         permission_level{community_account, "active"_n},
@@ -2052,11 +2080,15 @@ ACTION community::configbadge(
         transaction trx;
         datastream<const char*> ds( prop.packed_transaction.data(), prop.packed_transaction.size() );
         ds >> trx;
-	    auto cb_data = unpack<updatebadge_params>(&trx.actions[0].data[0], trx.actions[0].data.size());
+        for (auto action : trx.actions) {
+            if (action.account == cryptobadge_contract && action.name == badge_update_action) {
+	            auto cb_data = unpack<updatebadge_params>(&action.data[0], action.data.size());
 
-        check (cb_data.issuer == community_account, "ERR::CREATE_BADGE_PROPOSAL_INVALID::Issuer in update badge proposal not the same with community account");
-        check (cb_data.badge_id == badge_id, "ERR::CREATE_BADGE_PROPOSAL_INVALID::Issuer in update badge proposal not the same with config badge id");
-        // Todo: Verify badge param:
+                check (cb_data.issuer == community_account, "ERR::CREATE_BADGE_PROPOSAL_INVALID::Issuer in update badge proposal not the same with community account");
+                check (cb_data.badge_id == badge_id, "ERR::CREATE_BADGE_PROPOSAL_INVALID::Issuer in update badge proposal not the same with config badge id");
+            }
+        }
+
         action(
             permission_level{community_account, "active"_n},
             "eosio.msig"_n,
@@ -2128,15 +2160,6 @@ ACTION community::issuebadge(name community_account, name badge_propose_name)
 
     auto ram_payer = community_account;
 	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
-
-    multisig_proposals proptable( "eosio.msig"_n, cryptobadge_contract.value );
-    auto& prop = proptable.get( badge_propose_name.value, "proposal not found" );
-    transaction trx;
-    datastream<const char*> ds( prop.packed_transaction.data(), prop.packed_transaction.size() );
-    ds >> trx;
-    auto cb_data = unpack<issuebadge_params>(&trx.actions[0].data[0], trx.actions[0].data.size());
-
-    check (cb_data.issuer == community_account, "ERR::ISSUE_BADGE_PROPOSAL_INVALID::Issuer in issue badge proposal not the same with community account");;
 
     action(
         permission_level{community_account, "active"_n},
