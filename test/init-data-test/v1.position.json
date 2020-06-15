@@ -1,0 +1,39 @@
+{
+  "community1.c": [{
+    "pos_id": 1,
+    "pos_name": "Admin",
+    "max_holder": 10,
+    "holders": [
+      "creatortest"
+    ],
+    "fulfillment_type": 0,
+    "refer_codes": [{
+      "key": "po.appoint",
+      "value": 5
+    },{
+      "key": "po.config",
+      "value": 4
+    },{
+      "key": "po.dismiss",
+      "value": 6
+    }]
+  },{
+    "pos_id": 99,
+    "pos_name": "position test",
+    "max_holder": 10,
+    "holders": [
+      "creatortest"
+    ],
+    "fulfillment_type": 0,
+    "refer_codes": [{
+      "key": "po.appoint",
+      "value": 998
+    },{
+      "key": "po.config",
+      "value": 999
+    },{
+      "key": "po.dismiss",
+      "value": 997
+    }]
+  }]
+}
