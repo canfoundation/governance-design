@@ -1264,7 +1264,6 @@ ACTION community::createpos(
     vector<name> code_actions;
     code_actions.push_back("configpos"_n);
 
-    // TO DO: create configpos with creator (exec_type = SOLE_DESICION) for code_execution_right amendment_execution_right
     auto configCode = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
         row.code_name = PO_Config;
@@ -1666,9 +1665,9 @@ ACTION community::voteforpos(name community_account, uint64_t pos_id, name voter
     check(candidate_itr != _pos_candidate.end(), "ERR::CANDIDATE_NOT_ESIXT::The candidate does not exist");
 
     auto new_voters_detail = candidate_itr->voters;
-    auto voter_detail_itr = std::find(candidate_itr->voters.begin(), candidate_itr->voters.end(), voter);
+    auto voter_detail_itr = std::find(new_voters_detail.begin(), new_voters_detail.end(), voter);
 
-    if (voter_detail_itr == candidate_itr->voters.end())
+    if (voter_detail_itr == new_voters_detail.end())
     {
         if (vote_status == VoteStatus::VOTE) {
             new_voters_detail.push_back(voter);

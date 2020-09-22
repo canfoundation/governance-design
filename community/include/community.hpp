@@ -556,7 +556,9 @@ public:
             ((v1.position)(v1_position)(v1_position_table))
             ((v1.codeexec)(v1_sole_decision)(v1_code_sole_decision_table))
             ((v1.amenexec)(v1_sole_decision)(v1_amend_sole_decision_table))
-            ((v1.cproposal)(v1_code_proposal)(v1_code_proposals_table))
+            ((v1.filling)(v1_election_rule)(v1_election_table))
+            ((v1.pproposal)(v1_pos_proposal)(v1_posproposal_table))
+            ((v1.candidate)(v1_pos_candidate)(v1_poscandidate_table))
     )
 #endif
 };
