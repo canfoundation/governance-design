@@ -161,6 +161,9 @@ public:
     // Code Action
     ACTION createcode(name community_account, name code_name, name contract_name, vector<name> code_actions);
 
+    // Set Verification for the code before execute it
+    ACTION setverify(name community_account, uint64_t code_id, bool is_verify_com_account, bool is_verify_code_id);
+
     // Set excution type of code
     ACTION setexectype(name community_account, uint64_t code_id, uint8_t exec_type, bool is_amend_code);
 
@@ -345,6 +348,20 @@ private:
         indexed_by< "by.code.name"_n, const_mem_fun<v1_code, uint64_t, &v1_code::by_code_name>>,
         indexed_by< "by.refer.id"_n, const_mem_fun<v1_code, uint128_t, &v1_code::by_reference_id>>
         > v1_code_table;
+
+    // table codes with type sole decision with scope is community_creator
+    TABLE v1_code_verify
+    {
+        uint64_t code_id;
+        bool verify_com_account = true;
+        bool verify_code_id = true;
+
+        uint64_t primary_key() const { return code_id; }
+
+        EOSLIB_SERIALIZE( v1_code_verify, (code_id)(verify_com_account)(verify_code_id));
+    };
+
+    typedef eosio::multi_index<"v1.codevrf"_n, v1_code_verify> v1_code_verify_table;
 
     // table code collective rule with scope is community_creator
     TABLE v1_collective_decision
