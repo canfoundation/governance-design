@@ -297,10 +297,6 @@ ACTION community::initcode(name community_account, name creator, bool create_def
         std::make_tuple(community_account, creator))
         .send();
 
-    RightHolder _init_right_holder;
-
-    _init_right_holder.required_positions.push_back(pos_admin_id);
-
     // initialize createcode code
     auto co_amend_code = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
@@ -314,12 +310,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
     _code_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = co_amend_code->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = co_amend_code->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     if (create_default_code)
@@ -342,12 +338,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_inputmem_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
 
             _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_inputmem_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
         }
 
@@ -369,12 +365,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = po_create_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
 
             _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = po_create_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
         }
 
@@ -396,12 +392,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_access_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
 
             _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_access_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
         }
 
@@ -423,12 +419,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = ba_create_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
 
             _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = ba_create_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
         }
     }
@@ -801,8 +797,6 @@ ACTION community::createcode(name community_account, name code_name, name contra
     v1_ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
 
     v1_position_table _positions(_self, community_account.value);
-
-    RightHolder _init_right_holder;
 
     auto getByCodeName = _codes.get_index<"by.code.name"_n>();
     auto co_amend_code = getByCodeName.find(CO_Amend.value);
@@ -1433,7 +1427,7 @@ ACTION community::createpos(
 
     _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = configCode->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     code_actions.clear();
@@ -1456,7 +1450,7 @@ ACTION community::createpos(
 
     _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = appointCode->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     code_actions.clear();
@@ -1479,7 +1473,7 @@ ACTION community::createpos(
 
     _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = dismissCode->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     map<name, uint64_t> refer_codes = {
@@ -2076,13 +2070,13 @@ ACTION community::createbadge(
         {
             _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = issue_badge_code_id;
-                row.right_executor = right_issue_sole_executor;
+                row.right_executor = admin_right_holder();
             });
         }
         else
         {
             _amend_execution_rule.modify(amend_exec_type_itr, ram_payer, [&](auto &row) {
-                row.right_executor = right_issue_sole_executor;
+                row.right_executor = admin_right_holder();
             });
         }
     }
@@ -2742,6 +2736,15 @@ bool community::is_amend_action(name calling_action)
            calling_action == set_approver_action ||
            calling_action == set_vote_rule_action;
 }
+
+community::RightHolder community::admin_right_holder()
+{
+
+    RightHolder _admin_right_holder;
+    _admin_right_holder.required_positions.push_back(pos_admin_id);
+    return std::move(_admin_right_holder);
+}
+
 
 #ifdef IS_TEST
 #define EOSIO_ABI_CUSTOM(TYPE, MEMBERS)                                                       \
