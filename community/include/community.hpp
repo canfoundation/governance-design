@@ -123,7 +123,7 @@ public:
         vector<uint64_t> required_badges;
         vector<uint64_t> required_positions;
         vector<asset> required_tokens;
-        uint64_t required_exp;
+        uint64_t required_exp = 0;
         vector<name> accounts;
     };
 
