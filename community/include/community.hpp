@@ -123,7 +123,7 @@ public:
         vector<uint64_t> required_badges;
         vector<uint64_t> required_positions;
         vector<asset> required_tokens;
-        uint64_t required_exp;
+        uint64_t required_exp = 0;
         vector<name> accounts;
     };
 
@@ -284,6 +284,8 @@ private:
 
     void verify_right_holder_input(name community_account, RightHolder rightHolder);
 
+    RightHolder admin_right_holder();
+    
     static inline uint128_t build_reference_id(uint64_t reference_id, uint64_t type) {
         return static_cast<uint128_t>(type)  | static_cast<uint128_t>(reference_id) << 64;
     }
