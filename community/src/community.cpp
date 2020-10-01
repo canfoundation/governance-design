@@ -297,10 +297,6 @@ ACTION community::initcode(name community_account, name creator, bool create_def
         std::make_tuple(community_account, creator))
         .send();
 
-    RightHolder _init_right_holder;
-
-    _init_right_holder.required_positions.push_back(pos_admin_id);
-
     // initialize createcode code
     auto co_amend_code = _codes.emplace(ram_payer, [&](auto &row) {
         row.code_id = _codes.available_primary_key();
@@ -314,12 +310,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
     _code_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = co_amend_code->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = co_amend_code->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     if (create_default_code)
@@ -342,12 +338,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_inputmem_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
 
             _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_inputmem_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
         }
 
@@ -369,12 +365,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = po_create_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
 
             _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = po_create_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
         }
 
@@ -396,12 +392,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_access_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
 
             _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = co_access_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
         }
 
@@ -423,12 +419,12 @@ ACTION community::initcode(name community_account, name creator, bool create_def
 
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = ba_create_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
 
             _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
                 row.code_id = ba_create_code->code_id;
-                row.right_executor = _init_right_holder;
+                row.right_executor = admin_right_holder();
             });
         }
     }
@@ -801,8 +797,6 @@ ACTION community::createcode(name community_account, name code_name, name contra
     v1_ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
 
     v1_position_table _positions(_self, community_account.value);
-
-    RightHolder _init_right_holder;
 
     auto getByCodeName = _codes.get_index<"by.code.name"_n>();
     auto co_amend_code = getByCodeName.find(CO_Amend.value);
@@ -1433,7 +1427,7 @@ ACTION community::createpos(
 
     _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = configCode->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     code_actions.clear();
@@ -1456,7 +1450,7 @@ ACTION community::createpos(
 
     _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = appointCode->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     code_actions.clear();
@@ -1479,7 +1473,7 @@ ACTION community::createpos(
 
     _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
         row.code_id = dismissCode->code_id;
-        row.right_executor = _init_right_holder;
+        row.right_executor = admin_right_holder();
     });
 
     map<name, uint64_t> refer_codes = {
@@ -2053,11 +2047,25 @@ ACTION community::createbadge(
         issue_badge_code_id = issue_badge_code_itr->code_id;
     }
 
+    auto amend_exec_type_itr = _amend_execution_rule.find(issue_badge_code_id);
+    if (amend_exec_type_itr == _amend_execution_rule.end())
+    {
+        _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
+            row.code_id = issue_badge_code_id;
+            row.right_executor = admin_right_holder();
+        });
+    }
+    else
+    {
+        _amend_execution_rule.modify(amend_exec_type_itr, ram_payer, [&](auto &row) {
+            row.right_executor = admin_right_holder();
+        });
+    }
+
     if (issue_exec_type != ExecutionType::COLLECTIVE_DECISION)
     {
         verify_right_holder_input(community_account, right_issue_sole_executor);
         auto code_exec_type_itr = _code_execution_rule.find(issue_badge_code_id);
-        auto amend_exec_type_itr = _amend_execution_rule.find(issue_badge_code_id);
         if (code_exec_type_itr == _code_execution_rule.end())
         {
             _code_execution_rule.emplace(ram_payer, [&](auto &row) {
@@ -2071,20 +2079,6 @@ ACTION community::createbadge(
                 row.right_executor = right_issue_sole_executor;
             });
         }
-
-        if (amend_exec_type_itr == _amend_execution_rule.end())
-        {
-            _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = issue_badge_code_id;
-                row.right_executor = right_issue_sole_executor;
-            });
-        }
-        else
-        {
-            _amend_execution_rule.modify(amend_exec_type_itr, ram_payer, [&](auto &row) {
-                row.right_executor = right_issue_sole_executor;
-            });
-        }
     }
 
     if (issue_exec_type != ExecutionType::SOLE_DECISION)
@@ -2093,7 +2087,6 @@ ACTION community::createbadge(
         verify_right_holder_input(community_account, right_issue_approver);
         verify_right_holder_input(community_account, right_issue_voter);
         auto code_vote_rule_itr = _code_vote_rule.find(issue_badge_code_itr->code_id);
-        auto amend_vote_rule_itr = _amend_vote_rule.find(issue_badge_code_itr->code_id);
         if (code_vote_rule_itr == _code_vote_rule.end())
         {
             _code_vote_rule.emplace(ram_payer, [&](auto &row) {
@@ -2109,30 +2102,6 @@ ACTION community::createbadge(
         else
         {
             _code_vote_rule.modify(code_vote_rule_itr, ram_payer, [&](auto &row) {
-                row.right_proposer = right_issue_proposer;
-                row.right_approver = right_issue_approver;
-                row.right_voter = right_issue_voter;
-                row.approval_type = issue_approval_type;
-                row.pass_rule = issue_pass_rule;
-                row.vote_duration = issue_vote_duration;
-            });
-        }
-
-        if (amend_vote_rule_itr == _amend_vote_rule.end())
-        {
-            _amend_vote_rule.emplace(ram_payer, [&](auto &row) {
-                row.code_id = issue_badge_code_id;
-                row.right_proposer = right_issue_proposer;
-                row.right_approver = right_issue_approver;
-                row.right_voter = right_issue_voter;
-                row.approval_type = issue_approval_type;
-                row.pass_rule = issue_pass_rule;
-                row.vote_duration = issue_vote_duration;
-            });
-        }
-        else
-        {
-            _amend_vote_rule.modify(amend_vote_rule_itr, ram_payer, [&](auto &row) {
                 row.right_proposer = right_issue_proposer;
                 row.right_approver = right_issue_approver;
                 row.right_voter = right_issue_voter;
@@ -2158,7 +2127,7 @@ ACTION community::createbadge(
             row.code_name = BA_Config;
             row.contract_name = get_self();
             row.code_actions = code_actions;
-            row.amendment_exec_type = ba_create_code->code_exec_type;
+            row.amendment_exec_type = ExecutionType::SOLE_DECISION;
             row.code_type = {CodeTypeEnum::BADGE_CONFIG, badge_id};
         });
         config_badge_code_id = new_config_badge_code->code_id;
@@ -2167,96 +2136,35 @@ ACTION community::createbadge(
     {
         getByCodeReferId.modify(config_badge_code_itr, ram_payer, [&](auto &row) {
             row.code_name = issue_badge_code_name;
-            row.code_exec_type = issue_exec_type;
+            row.code_exec_type = ExecutionType::SOLE_DECISION;
             row.code_type = {CodeTypeEnum::BADGE_CONFIG, badge_id};
         });
         config_badge_code_id = config_badge_code_itr->code_id;
     }
 
-    if (ba_create_code->code_exec_type != ExecutionType::COLLECTIVE_DECISION)
+    auto config_badge_code_sole_decision = _code_execution_rule.find(config_badge_code_id);
+    auto config_badge_amend_code_sole_decision = _amend_execution_rule.find(config_badge_code_id);
+    if (config_badge_code_sole_decision == _code_execution_rule.end())
     {
-        auto ba_create_code_sole_decision = _code_execution_rule.find(ba_create_code->code_id);
-        auto config_badge_code_sole_decision = _code_execution_rule.find(config_badge_code_id);
-        auto config_badge_amend_code_sole_decision = _amend_execution_rule.find(config_badge_code_id);
-        if (ba_create_code_sole_decision != _code_execution_rule.end())
-        {
-            if (config_badge_code_sole_decision == _code_execution_rule.end())
-            {
-                _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
-                    row.code_id = config_badge_code_id;
-                    row.right_executor = ba_create_code_sole_decision->right_executor;
-                });
+        _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
+            row.code_id = config_badge_code_id;
+            row.right_executor = admin_right_holder();
+        });
 
-                _code_execution_rule.emplace(ram_payer, [&](auto &row) {
-                    row.code_id = config_badge_code_id;
-                    row.right_executor = ba_create_code_sole_decision->right_executor;
-                });
-            }
-            else
-            {
-                _amend_execution_rule.modify(config_badge_amend_code_sole_decision, ram_payer, [&](auto &row) {
-                    row.right_executor = ba_create_code_sole_decision->right_executor;
-                });
-
-                _code_execution_rule.modify(config_badge_code_sole_decision, ram_payer, [&](auto &row) {
-                    row.right_executor = ba_create_code_sole_decision->right_executor;
-                });
-            }
-        }
+        _code_execution_rule.emplace(ram_payer, [&](auto &row) {
+            row.code_id = config_badge_code_id;
+            row.right_executor = admin_right_holder();
+        });
     }
-
-    if (ba_create_code->code_exec_type != ExecutionType::SOLE_DECISION)
+    else
     {
-        auto ba_create_code_collective_decision = _code_vote_rule.find(ba_create_code->code_id);
-        auto config_badge_code_collective_decision = _code_vote_rule.find(config_badge_code_id);
-        auto config_badge_amend_code_collective_decision = _amend_vote_rule.find(config_badge_code_id);
-        if (ba_create_code_collective_decision != _code_vote_rule.end())
-        {
-            if (config_badge_code_collective_decision == _code_vote_rule.end())
-            {
-                _amend_vote_rule.emplace(ram_payer, [&](auto &row) {
-                    row.code_id = config_badge_code_id;
-                    row.right_proposer = ba_create_code_collective_decision->right_proposer;
-                    row.right_approver = ba_create_code_collective_decision->right_approver;
-                    row.right_voter = ba_create_code_collective_decision->right_voter;
-                    row.approval_type = ba_create_code_collective_decision->approval_type;
-                    row.pass_rule = ba_create_code_collective_decision->pass_rule;
-                    row.vote_duration = ba_create_code_collective_decision->vote_duration;
-                });
+        _amend_execution_rule.modify(config_badge_amend_code_sole_decision, ram_payer, [&](auto &row) {
+            row.right_executor = admin_right_holder();
+        });
 
-                _code_vote_rule.emplace(ram_payer, [&](auto &row) {
-                    row.code_id = config_badge_code_id;
-                    row.right_proposer = ba_create_code_collective_decision->right_proposer;
-                    row.right_approver = ba_create_code_collective_decision->right_approver;
-                    row.right_voter = ba_create_code_collective_decision->right_voter;
-                    row.approval_type = ba_create_code_collective_decision->approval_type;
-                    row.pass_rule = ba_create_code_collective_decision->pass_rule;
-                    row.vote_duration = ba_create_code_collective_decision->vote_duration;
-                });
-            }
-            else
-            {
-                _amend_vote_rule.modify(config_badge_amend_code_collective_decision, ram_payer, [&](auto &row) {
-                    row.code_id = config_badge_code_id;
-                    row.right_proposer = ba_create_code_collective_decision->right_proposer;
-                    row.right_approver = ba_create_code_collective_decision->right_approver;
-                    row.right_voter = ba_create_code_collective_decision->right_voter;
-                    row.approval_type = ba_create_code_collective_decision->approval_type;
-                    row.pass_rule = ba_create_code_collective_decision->pass_rule;
-                    row.vote_duration = ba_create_code_collective_decision->vote_duration;
-                });
-
-                _code_vote_rule.modify(config_badge_code_collective_decision, ram_payer, [&](auto &row) {
-                    row.code_id = config_badge_code_id;
-                    row.right_proposer = ba_create_code_collective_decision->right_proposer;
-                    row.right_approver = ba_create_code_collective_decision->right_approver;
-                    row.right_voter = ba_create_code_collective_decision->right_voter;
-                    row.approval_type = ba_create_code_collective_decision->approval_type;
-                    row.pass_rule = ba_create_code_collective_decision->pass_rule;
-                    row.vote_duration = ba_create_code_collective_decision->vote_duration;
-                });
-            }
-        }
+        _code_execution_rule.modify(config_badge_code_sole_decision, ram_payer, [&](auto &row) {
+            row.right_executor = admin_right_holder();
+        });
     }
 }
 
@@ -2742,6 +2650,15 @@ bool community::is_amend_action(name calling_action)
            calling_action == set_approver_action ||
            calling_action == set_vote_rule_action;
 }
+
+community::RightHolder community::admin_right_holder()
+{
+
+    RightHolder _admin_right_holder;
+    _admin_right_holder.required_positions.push_back(pos_admin_id);
+    return std::move(_admin_right_holder);
+}
+
 
 #ifdef IS_TEST
 #define EOSIO_ABI_CUSTOM(TYPE, MEMBERS)                                                       \
