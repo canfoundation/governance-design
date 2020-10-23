@@ -1741,6 +1741,10 @@ ACTION community::appointpos(name community_account, uint64_t pos_id, vector<nam
     check(pos_itr->fulfillment_type == FillingType::APPOINTMENT, "ERR::FAILED_FILLING_TYPE::Only fulfillment equal appoinment need to appoint");
     check(pos_itr->max_holder >= pos_itr->holders.size() + holder_accounts.size(), "ERR::VERIFY_FAILED::The holder accounts exceed the maximum number.");
 
+    // check that user not appoint holder account again
+    auto existingHolder = std::find_first_of(pos_itr->holders.begin(), pos_itr->holders.end(), holder_accounts.begin(), holder_accounts.end());
+    check(existingHolder == pos_itr->holders.end(), "ERR::VERIFY_FAILED::already appointed for this holder account");
+
     holder_accounts.insert(holder_accounts.end(), pos_itr->holders.begin(), pos_itr->holders.end());
     _positions.modify(pos_itr, ram_payer, [&](auto &row) {
         row.holders = holder_accounts;
