@@ -544,17 +544,20 @@ ACTION community::execcode(name community_account, name exec_account, uint64_t c
             v1_code_verify_table _verify_codes(_self, community_account.value);
             auto verify_code_itr = _verify_codes.find(code_id);
 
-            if (verify_code_itr != _verify_codes.end()) {
+            if (verify_code_itr != _verify_codes.end())
+            {
                 is_verify_account = verify_code_itr->verify_com_account;
                 is_verify_code = verify_code_itr->verify_code_id;
             }
 
-            if(is_verify_account){
+            if (is_verify_account)
+            {
                 packed_params_datastream >> packed_community_account;
                 check(packed_community_account == community_account, "ERR::INVALID_PACKED_COMMUNITY_ACCOUNT_PARAM::Specified community account not match with community account in packed params");
             }
 
-            if(is_verify_code){
+            if (is_verify_code)
+            {
                 uint64_t packed_code_id;
                 packed_params_datastream >> packed_code_id;
                 check(packed_code_id == code_id, "ERR::INVALID_PACKED_CODE_ID_ACCOUNT_PARAM::Specified code id not match with code id in packed params");
@@ -861,14 +864,16 @@ ACTION community::setverify(name community_account, uint64_t code_id, bool is_ve
 
     v1_code_verify_table _verify_codes(_self, community_account.value);
     auto verify_code_itr = _verify_codes.find(code_id);
-    if (verify_code_itr == _verify_codes.end()) {
+    if (verify_code_itr == _verify_codes.end())
+    {
         _verify_codes.emplace(ram_payer, [&](auto &row) {
             row.code_id = code_id;
             row.verify_com_account = is_verify_com_account;
             row.verify_code_id = is_verify_code_id;
         });
-
-    } else {
+    }
+    else
+    {
         _verify_codes.modify(verify_code_itr, ram_payer, [&](auto &row) {
             row.verify_com_account = is_verify_com_account;
             row.verify_code_id = is_verify_code_id;
@@ -1983,11 +1988,15 @@ ACTION community::createbadge(
         std::make_tuple(cryptobadge_contract, badge_propose_name, permission_level{community_account, "active"_n}))
         .send();
 
+    vector<eosio::permission_level> action_permission = {{community_account, "active"_n}};
+    if (ram_payer == ram_payer_system)
+        action_permission.push_back({ram_payer_system, "active"_n});
+
     action(
-        permission_level{community_account, "active"_n},
+        action_permission,
         "eosio.msig"_n,
         "exec"_n,
-        std::make_tuple(cryptobadge_contract, badge_propose_name, community_account))
+        std::make_tuple(cryptobadge_contract, badge_propose_name, ram_payer))
         .send();
 
     v1_code_table _codes(_self, community_account.value);
@@ -2214,11 +2223,15 @@ ACTION community::configbadge(
             std::make_tuple(cryptobadge_contract, update_badge_proposal_name, permission_level{community_account, "active"_n}))
             .send();
 
+        vector<eosio::permission_level> action_permission = {{community_account, "active"_n}};
+        if (ram_payer == ram_payer_system)
+            action_permission.push_back({ram_payer_system, "active"_n});
+
         action(
-            permission_level{community_account, "active"_n},
+            action_permission,
             "eosio.msig"_n,
             "exec"_n,
-            std::make_tuple(cryptobadge_contract, update_badge_proposal_name, community_account))
+            std::make_tuple(cryptobadge_contract, update_badge_proposal_name, ram_payer))
             .send();
     }
 
@@ -2295,11 +2308,15 @@ ACTION community::issuebadge(name community_account, name badge_propose_name)
         std::make_tuple(cryptobadge_contract, badge_propose_name, permission_level{community_account, "active"_n}))
         .send();
 
+    vector<eosio::permission_level> action_permission = {{community_account, "active"_n}};
+    if (ram_payer == ram_payer_system)
+        action_permission.push_back({ram_payer_system, "active"_n});
+        
     action(
-        permission_level{community_account, "active"_n},
+        action_permission,
         "eosio.msig"_n,
         "exec"_n,
-        std::make_tuple(cryptobadge_contract, badge_propose_name, community_account))
+        std::make_tuple(cryptobadge_contract, badge_propose_name, ram_payer))
         .send();
 }
 
@@ -2662,7 +2679,6 @@ community::RightHolder community::admin_right_holder()
     _admin_right_holder.required_positions.push_back(pos_admin_id);
     return std::move(_admin_right_holder);
 }
-
 
 #ifdef IS_TEST
 #define EOSIO_ABI_CUSTOM(TYPE, MEMBERS)                                                       \
