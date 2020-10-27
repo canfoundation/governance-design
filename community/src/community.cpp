@@ -1996,7 +1996,7 @@ ACTION community::createbadge(
         action_permission,
         "eosio.msig"_n,
         "exec"_n,
-        std::make_tuple(cryptobadge_contract, badge_propose_name, community_account))
+        std::make_tuple(cryptobadge_contract, badge_propose_name, ram_payer))
         .send();
 
     v1_code_table _codes(_self, community_account.value);
@@ -2231,7 +2231,7 @@ ACTION community::configbadge(
             action_permission,
             "eosio.msig"_n,
             "exec"_n,
-            std::make_tuple(cryptobadge_contract, update_badge_proposal_name, community_account))
+            std::make_tuple(cryptobadge_contract, update_badge_proposal_name, ram_payer))
             .send();
     }
 
