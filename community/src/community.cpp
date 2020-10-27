@@ -2278,16 +2278,17 @@ ACTION community::configbadge(
 ACTION community::issuebadge(name community_account, name badge_propose_name)
 {
     require_auth(community_account);
-
+    
     v1_global_table config(_self, _self.value);
-    _config = config.exists() ? config.get() : v1_global{};
-    const name ram_payer_system = _config.ram_payer_name;
+	_config = config.exists() ? config.get() : v1_global{};
+	const name ram_payer_system = _config.ram_payer_name;
     const name cryptobadge_contract = _config.cryptobadge_contract_name;
 
     auto ram_payer = community_account;
-    if (has_auth(ram_payer_system))
-        ram_payer = ram_payer_system;
+	if(has_auth(ram_payer_system)) ram_payer = ram_payer_system;
 
+    vector<eosio::permission_level> action_permission = {{community_account, "active"_n}};
+    if(ram_payer == ram_payer_system)  action_permission.push_back({ram_payer_system, "active"_n});
     action(
         permission_level{community_account, "active"_n},
         "eosio.msig"_n,
@@ -2296,10 +2297,10 @@ ACTION community::issuebadge(name community_account, name badge_propose_name)
         .send();
 
     action(
-        permission_level{community_account, "active"_n},
+        action_permission,
         "eosio.msig"_n,
         "exec"_n,
-        std::make_tuple(cryptobadge_contract, badge_propose_name, community_account))
+        std::make_tuple(cryptobadge_contract, badge_propose_name, ram_payer))
         .send();
 }
 
