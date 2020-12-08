@@ -404,34 +404,6 @@
             ]
         },
         {
-            "name": "hydraload",
-            "base": "",
-            "fields": [
-                {
-                    "name": "payload",
-                    "type": "hydraload_payload[]"
-                }
-            ]
-        },
-        {
-            "name": "hydraload_payload",
-            "base": "",
-            "fields": [
-                {
-                    "name": "table_name",
-                    "type": "name"
-                },
-                {
-                    "name": "scope",
-                    "type": "name"
-                },
-                {
-                    "name": "row_data",
-                    "type": "bytes"
-                }
-            ]
-        },
-        {
             "name": "initadminpos",
             "base": "",
             "fields": [
@@ -748,6 +720,28 @@
             ]
         },
         {
+            "name": "setverify",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "is_verify_com_account",
+                    "type": "bool"
+                },
+                {
+                    "name": "is_verify_code_id",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
             "name": "setvoter",
             "base": "",
             "fields": [
@@ -908,6 +902,24 @@
                 {
                     "name": "exec_at",
                     "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "v1_code_verify",
+            "base": "",
+            "fields": [
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "verify_com_account",
+                    "type": "bool"
+                },
+                {
+                    "name": "verify_code_id",
+                    "type": "bool"
                 }
             ]
         },
@@ -1278,11 +1290,6 @@
             "ricardian_contract": ""
         },
         {
-            "name": "hydraload",
-            "type": "hydraload",
-            "ricardian_contract": ""
-        },
-        {
             "name": "initadminpos",
             "type": "initadminpos",
             "ricardian_contract": ""
@@ -1345,6 +1352,11 @@
         {
             "name": "setsoleexec",
             "type": "setsoleexec",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setverify",
+            "type": "setverify",
             "ricardian_contract": ""
         },
         {
@@ -1440,6 +1452,13 @@
         {
             "name": "v1.codevote",
             "type": "v1_collective_decision",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.codevrf",
+            "type": "v1_code_verify",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

@@ -1,6 +1,6 @@
 # governance-design
 
-## Version : 2.0.0
+## Version : 3.0.1
 
 This repository is a provided following contracts:
 
@@ -11,6 +11,10 @@ Dependencies:
 * [can v1.0.x](https://github.com/canfoundation/CAN/releases/tag/can-v1.0.0)
 * [eosio.cdt v1.7.x](https://github.com/EOSIO/eosio.cdt/releases/tag/v1.7.0)
 * [crypto-badge v2.0.x](https://github.com/canfoundation/cryptobadge/releases/tag/v2.0.0)
+
+Documents:
+
+* [Example use cleos](https://github.com/canfoundation/governance-design/blob/master/community/Readme.md)
 
 ## Build
 
