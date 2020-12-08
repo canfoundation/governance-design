@@ -554,6 +554,20 @@
             ]
         },
         {
+            "name": "revokebadge",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "revoke_badge_propose_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "setaccess",
             "base": "",
             "fields": [
@@ -1320,6 +1334,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "revokebadge",
+            "type": "revokebadge",
+            "ricardian_contract": ""
+        },
+        {
             "name": "setaccess",
             "type": "setaccess",
             "ricardian_contract": ""
@@ -1429,7 +1448,7 @@
             "key_types": []
         },
         {
-            "name": "v1.cert",
+            "name": "v1.certs",
             "type": "v1_cert",
             "index_type": "i64",
             "key_names": [],
