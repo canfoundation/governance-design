@@ -468,6 +468,20 @@
             ]
         },
         {
+            "name": "migraterevok",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "badge_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
             "name": "nominatepos",
             "base": "",
             "fields": [
@@ -1321,6 +1335,11 @@
         {
             "name": "issuebadge",
             "type": "issuebadge",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "migraterevok",
+            "type": "migraterevok",
             "ricardian_contract": ""
         },
         {
