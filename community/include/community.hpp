@@ -1,4 +1,4 @@
-#define IS_TEST
+// #define IS_TEST
 
 #include <eosio/eosio.hpp>
 #include <eosio/multi_index.hpp>
@@ -261,6 +261,8 @@ public:
         asset init_net,
         asset init_cpu
     );
+
+    ACTION migraterevok(name community_account, uint64_t badge_id);
 
 private:
     void create_issue_badge_code(
