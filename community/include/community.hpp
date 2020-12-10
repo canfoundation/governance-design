@@ -61,6 +61,7 @@ CONTRACT community : public contract
         POSITION_DISMISS,
         BADGE_CONFIG,
         BADGE_ISSUE,
+        BADGE_REVOKE,
     };
 
     enum BadgeIssueType {
@@ -247,6 +248,8 @@ public:
 
     ACTION issuebadge(name community_account, name badge_propose_name);
 
+    ACTION revokebadge(name community_account, name revoke_badge_propose_name);
+
     ACTION setconfig(
         name community_creator_name,
         name cryptobadge_contract_name,
@@ -260,6 +263,25 @@ public:
     );
 
 private:
+    void create_issue_badge_code(
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        uint8_t issue_exec_type,
+        RightHolder right_issue_sole_executor,
+        RightHolder right_issue_proposer,
+        uint8_t issue_approval_type,
+        RightHolder right_issue_approver,
+        RightHolder right_issue_voter,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration,
+        name ram_payer
+    );
+
+    void create_config_badge_code_for_admin(name community_account, uint64_t badge_id, name ram_payer);
+
+    void create_revoke_badge_code_for_admin(name community_account, uint64_t badge_id, name ram_payer);
+
     bool verify_approver(name community_account, name voter, uint64_t code_id, bool is_ammnend_code);
 
     bool verify_voter(name community_account, name voter, uint64_t code_id, bool is_amend_code);
@@ -552,7 +574,7 @@ private:
 		}
 	};
 
-	typedef eosio::multi_index<"v1.cert"_n, v1_cert,
+	typedef eosio::multi_index<"v1.certs"_n, v1_cert,
 							   eosio::indexed_by<"badgeid"_n, eosio::const_mem_fun<v1_cert, uint64_t, &v1_cert::by_badge_id>>,
 							   eosio::indexed_by<"owner"_n, eosio::const_mem_fun<v1_cert, uint64_t, &v1_cert::by_owner>>> v1_cert_table;
 
@@ -577,6 +599,7 @@ public:
             ((v1.amenexec)(v1_sole_decision)(v1_amend_sole_decision_table))
             ((v1.filling)(v1_election_rule)(v1_election_table))
             ((v1.pproposal)(v1_pos_proposal)(v1_posproposal_table))
+            ((v1.cproposal)(v1_code_proposal)(v1_code_proposals_table))
             ((v1.candidate)(v1_pos_candidate)(v1_poscandidate_table))
     )
 #endif

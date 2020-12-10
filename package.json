@@ -7,7 +7,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@klevoya/hydra": "1.2.0",
+    "@klevoya/hydra": "1.2.2",
     "jest": "^25.1.0"
   },
   "devDependencies": {

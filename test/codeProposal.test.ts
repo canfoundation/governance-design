@@ -371,8 +371,8 @@ describe("test create/vote/execute proposal", () => {
     const executeProposalName = 'initproposal';
 
     const serializeActionData = '8040f0d94d2d254500800819abac1245008042d3ccab36650200c2a42e2393b1ca00c4a42e2393b1ca';
+    // console.log('--------- governance contract: ', JSON.stringify(governanceContract.abi));
     await governanceContract.loadFixtures(`v1.cproposal`, {
-      // scope: [row1, row2, ...],
       'community1.c': [{
         proposal_name: executeProposalName,
         proposer: proposer.accountName,
@@ -391,8 +391,8 @@ describe("test create/vote/execute proposal", () => {
             value: 1,
           }],
         proposal_status: 0,
-        propose_time: Date().toString(),
-        exec_at: Date().toString(),
+        propose_time: '2020-12-10T04:01:08', //new Date().toString(),
+        exec_at: '2020-12-10T04:01:08', //new Date().toString(),
       }],
     });
     await expect(governanceContract.contract.execproposal({
