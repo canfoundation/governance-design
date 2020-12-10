@@ -404,6 +404,34 @@
             ]
         },
         {
+            "name": "hydraload",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payload",
+                    "type": "hydraload_payload[]"
+                }
+            ]
+        },
+        {
+            "name": "hydraload_payload",
+            "base": "",
+            "fields": [
+                {
+                    "name": "table_name",
+                    "type": "name"
+                },
+                {
+                    "name": "scope",
+                    "type": "name"
+                },
+                {
+                    "name": "row_data",
+                    "type": "bytes"
+                }
+            ]
+        },
+        {
             "name": "initadminpos",
             "base": "",
             "fields": [
@@ -550,6 +578,20 @@
                 {
                     "name": "code_actions",
                     "type": "execution_code_data[]"
+                }
+            ]
+        },
+        {
+            "name": "revokebadge",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "revoke_badge_propose_name",
+                    "type": "name"
                 }
             ]
         },
@@ -1290,6 +1332,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "hydraload",
+            "type": "hydraload",
+            "ricardian_contract": ""
+        },
+        {
             "name": "initadminpos",
             "type": "initadminpos",
             "ricardian_contract": ""
@@ -1317,6 +1364,11 @@
         {
             "name": "proposecode",
             "type": "proposecode",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "revokebadge",
+            "type": "revokebadge",
             "ricardian_contract": ""
         },
         {
@@ -1429,7 +1481,7 @@
             "key_types": []
         },
         {
-            "name": "v1.cert",
+            "name": "v1.certs",
             "type": "v1_cert",
             "index_type": "i64",
             "key_names": [],
