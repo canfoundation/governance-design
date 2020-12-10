@@ -2045,8 +2045,8 @@ ACTION community::configbadge(
     name community_account,
     uint64_t badge_id,
     uint8_t issue_type,
-    name update_badge_proposal_name)
-{
+    name update_badge_proposal_name
+) {
     require_auth(community_account);
 
     v1_global_table config(_self, _self.value);
@@ -2146,6 +2146,103 @@ ACTION community::configbadge(
         });
         issue_badge_code_id = issue_badge_code_itr->code_id;
     }
+
+    uint128_t revoke_badge_reference_id = build_reference_id(badge_id, CodeTypeEnum::BADGE_REVOKE);
+    auto revoke_badge_code_itr = getByCodeReferId.find(revoke_badge_reference_id);
+
+    vector<eosio::permission_level> action_permission = {{community_account, "active"_n}};
+    if (ram_payer == ram_payer_system)
+        action_permission.push_back({ram_payer_system, "active"_n});
+    if (revoke_badge_code_itr == getByCodeReferId.end()) {
+        action(
+            action_permission,
+            get_self(),
+            "migraterevok"_n,
+            std::make_tuple(community_account, badge_id))
+            .send();
+    }
+}
+
+ACTION community::migraterevok(name community_account, uint64_t badge_id) {
+    require_auth(community_account);
+
+    v1_global_table config(_self, _self.value);
+    _config = config.exists() ? config.get() : v1_global{};
+    const name ram_payer_system = _config.ram_payer_name;
+
+    auto ram_payer = community_account;
+    if (has_auth(ram_payer_system))
+        ram_payer = ram_payer_system;
+
+    v1_code_table _codes(_self, community_account.value);
+
+    v1_code_sole_decision_table _code_execution_rule(_self, community_account.value);
+    v1_amend_sole_decision_table _amend_execution_rule(_self, community_account.value);
+
+    v1_code_collective_decision_table _code_vote_rule(_self, community_account.value);
+    v1_ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
+
+    v1_position_table _positions(_self, community_account.value);
+
+    auto getByCodeReferId = _codes.get_index<"by.refer.id"_n>();
+
+    vector<name> code_actions;
+    code_actions.push_back("revokebadge"_n);
+
+    uint128_t config_badge_reference_id = build_reference_id(badge_id, CodeTypeEnum::BADGE_CONFIG);
+    auto config_badge_code_itr = getByCodeReferId.find(config_badge_reference_id);
+
+    check(config_badge_code_itr != getByCodeReferId.end(), "ERR::CONFIG_BADGE_CODE_NOT_EXISTED::Config badge code does not exist");
+
+    uint128_t revoke_badge_reference_id = build_reference_id(badge_id, CodeTypeEnum::BADGE_REVOKE);
+    auto revoke_badge_code_itr = getByCodeReferId.find(revoke_badge_reference_id);
+
+    check(revoke_badge_code_itr == getByCodeReferId.end(), "ERR::REVOKE_BADGE_CODE_ALREADY_EXISTED::Revoke code has been already existed");
+
+    // save revoke badge code to the table
+    auto new_revoke_badge_code = _codes.emplace(ram_payer, [&](auto &row) {
+        row.code_id = _codes.available_primary_key();
+        row.code_name = BA_Revoke;
+        row.contract_name = get_self();
+        row.code_actions = code_actions;
+        row.code_exec_type = config_badge_code_itr->code_exec_type;
+        row.amendment_exec_type = ExecutionType::SOLE_DECISION;
+        row.code_type = {CodeTypeEnum::BADGE_REVOKE, badge_id};
+    });
+
+    if (config_badge_code_itr->code_exec_type != ExecutionType::SOLE_DECISION)
+    {
+        auto config_badge_code_collective_decision = _code_vote_rule.find(config_badge_code_itr->code_id);
+        if (config_badge_code_collective_decision != _code_vote_rule.end())
+        {
+            _code_vote_rule.emplace(ram_payer, [&](auto &row) {
+                row.code_id = new_revoke_badge_code->code_id;
+                row.right_proposer = config_badge_code_collective_decision->right_proposer;
+                row.right_approver = config_badge_code_collective_decision->right_approver;
+                row.right_voter = config_badge_code_collective_decision->right_voter;
+                row.approval_type = config_badge_code_collective_decision->approval_type;
+                row.pass_rule = config_badge_code_collective_decision->pass_rule;
+                row.vote_duration = config_badge_code_collective_decision->vote_duration;
+            });
+        }
+    }
+
+    if (config_badge_code_itr->code_exec_type != ExecutionType::COLLECTIVE_DECISION)
+    {
+        auto config_badge_code_sole_decision = _code_execution_rule.find(config_badge_code_itr->code_id);
+        if (config_badge_code_sole_decision != _code_execution_rule.end())
+        {
+            _code_execution_rule.emplace(ram_payer, [&](auto &row) {
+                row.code_id = new_revoke_badge_code->code_id;
+                row.right_executor = config_badge_code_sole_decision->right_executor;
+            });
+        }
+    }
+
+    _amend_execution_rule.emplace(ram_payer, [&](auto &row) {
+        row.code_id = new_revoke_badge_code->code_id;
+        row.right_executor = admin_right_holder();
+    });
 }
 
 ACTION community::issuebadge(name community_account, name badge_propose_name)
@@ -2264,8 +2361,6 @@ void community::create_issue_badge_code(
     v1_ammend_collective_decision_table _amend_vote_rule(_self, community_account.value);
 
     v1_position_table _positions(_self, community_account.value);
-
-    auto getByCodeName = _codes.get_index<"by.code.name"_n>();
 
     name issue_badge_code_name;
     if (issue_type == BadgeIssueType::WITHOUT_CLAIM)
@@ -2392,7 +2487,6 @@ void community::create_config_badge_code_for_admin(name community_account, uint6
 
     v1_position_table _positions(_self, community_account.value);
 
-    auto getByCodeName = _codes.get_index<"by.code.name"_n>();
     auto getByCodeReferId = _codes.get_index<"by.refer.id"_n>();
 
     vector<name> code_actions;
@@ -2462,7 +2556,6 @@ void community::create_revoke_badge_code_for_admin(name community_account, uint6
 
     v1_position_table _positions(_self, community_account.value);
 
-    auto getByCodeName = _codes.get_index<"by.code.name"_n>();
     auto getByCodeReferId = _codes.get_index<"by.refer.id"_n>();
 
     vector<name> code_actions;
@@ -2901,4 +2994,4 @@ community::RightHolder community::admin_right_holder()
 #endif
 
 EOSIO_ABI_CUSTOM(community,
-                 (setapprotype)(setvoter)(setapprover)(setaccess)(transfer)(createacc)(create)(initcode)(inputmembers)(initadminpos)(execcode)(createcode)(setverify)(createpos)(configpos)(nominatepos)(approvepos)(voteforcode)(voteforpos)(dismisspos)(setexectype)(appointpos)(proposecode)(execproposal)(verifyholder)(createbadge)(issuebadge)(configbadge)(revokebadge)(setsoleexec)(setproposer)(setvoterule)(setconfig))
+                 (setapprotype)(setvoter)(setapprover)(setaccess)(transfer)(createacc)(create)(initcode)(inputmembers)(initadminpos)(execcode)(createcode)(setverify)(createpos)(configpos)(nominatepos)(approvepos)(voteforcode)(voteforpos)(dismisspos)(setexectype)(appointpos)(proposecode)(execproposal)(verifyholder)(createbadge)(issuebadge)(configbadge)(revokebadge)(migraterevok)(setsoleexec)(setproposer)(setvoterule)(setconfig))

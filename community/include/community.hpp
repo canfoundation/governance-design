@@ -262,6 +262,8 @@ public:
         asset init_cpu
     );
 
+    ACTION migraterevok(name community_account, uint64_t badge_id);
+
 private:
     void create_issue_badge_code(
         name community_account,
