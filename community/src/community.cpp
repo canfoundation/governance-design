@@ -456,6 +456,7 @@ ACTION community::inputmembers(name community_account, vector<name> added_member
 
     for (auto added_member : added_members)
     {
+        check( is_account( added_member ), "one of those added accounts does not exist");
         auto mem_itr = _members.find(added_member.value);
         check(mem_itr == _members.end(), "ERR::MEMBER_ALREADY_EXIST::At least one of the member already exist.");
         _members.emplace(ram_payer, [&](auto &row) {
