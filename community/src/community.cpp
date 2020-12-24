@@ -466,7 +466,6 @@ ACTION community::inputmembers(name community_account, vector<name> added_member
 
     for (auto removed_member : removed_members)
     {
-        check( is_account( removed_member ), "one of those removed accounts does not exist");
         auto mem_itr = _members.find(removed_member.value);
         check(mem_itr != _members.end(), "ERR::MEMBER_NOT_FOUND::At least one of the member was not found.");
         _members.erase(mem_itr);
