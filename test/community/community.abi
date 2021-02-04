@@ -582,6 +582,20 @@
             ]
         },
         {
+            "name": "revokebadge",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "revoke_badge_propose_name",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "setaccess",
             "base": "",
             "fields": [
@@ -748,6 +762,28 @@
             ]
         },
         {
+            "name": "setverify",
+            "base": "",
+            "fields": [
+                {
+                    "name": "community_account",
+                    "type": "name"
+                },
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "is_verify_com_account",
+                    "type": "bool"
+                },
+                {
+                    "name": "is_verify_code_id",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
             "name": "setvoter",
             "base": "",
             "fields": [
@@ -908,6 +944,24 @@
                 {
                     "name": "exec_at",
                     "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "v1_code_verify",
+            "base": "",
+            "fields": [
+                {
+                    "name": "code_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "verify_com_account",
+                    "type": "bool"
+                },
+                {
+                    "name": "verify_code_id",
+                    "type": "bool"
                 }
             ]
         },
@@ -1313,6 +1367,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "revokebadge",
+            "type": "revokebadge",
+            "ricardian_contract": ""
+        },
+        {
             "name": "setaccess",
             "type": "setaccess",
             "ricardian_contract": ""
@@ -1345,6 +1404,11 @@
         {
             "name": "setsoleexec",
             "type": "setsoleexec",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setverify",
+            "type": "setverify",
             "ricardian_contract": ""
         },
         {
@@ -1417,7 +1481,7 @@
             "key_types": []
         },
         {
-            "name": "v1.cert",
+            "name": "v1.certs",
             "type": "v1_cert",
             "index_type": "i64",
             "key_names": [],
@@ -1440,6 +1504,13 @@
         {
             "name": "v1.codevote",
             "type": "v1_collective_decision",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "v1.codevrf",
+            "type": "v1_code_verify",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

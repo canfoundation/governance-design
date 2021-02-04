@@ -61,6 +61,7 @@ CONTRACT community : public contract
         POSITION_DISMISS,
         BADGE_CONFIG,
         BADGE_ISSUE,
+        BADGE_REVOKE,
     };
 
     enum BadgeIssueType {
@@ -123,7 +124,7 @@ public:
         vector<uint64_t> required_badges;
         vector<uint64_t> required_positions;
         vector<asset> required_tokens;
-        uint64_t required_exp;
+        uint64_t required_exp = 0;
         vector<name> accounts;
     };
 
@@ -160,6 +161,9 @@ public:
 
     // Code Action
     ACTION createcode(name community_account, name code_name, name contract_name, vector<name> code_actions);
+
+    // Set Verification for the code before execute it
+    ACTION setverify(name community_account, uint64_t code_id, bool is_verify_com_account, bool is_verify_code_id);
 
     // Set excution type of code
     ACTION setexectype(name community_account, uint64_t code_id, uint8_t exec_type, bool is_amend_code);
@@ -244,6 +248,8 @@ public:
 
     ACTION issuebadge(name community_account, name badge_propose_name);
 
+    ACTION revokebadge(name community_account, name revoke_badge_propose_name);
+
     ACTION setconfig(
         name community_creator_name,
         name cryptobadge_contract_name,
@@ -256,7 +262,28 @@ public:
         asset init_cpu
     );
 
+    ACTION migraterevok(name community_account, uint64_t badge_id);
+
 private:
+    void create_issue_badge_code(
+        name community_account,
+        uint64_t badge_id,
+        uint8_t issue_type,
+        uint8_t issue_exec_type,
+        RightHolder right_issue_sole_executor,
+        RightHolder right_issue_proposer,
+        uint8_t issue_approval_type,
+        RightHolder right_issue_approver,
+        RightHolder right_issue_voter,
+        double issue_pass_rule,
+        uint64_t issue_vote_duration,
+        name ram_payer
+    );
+
+    void create_config_badge_code_for_admin(name community_account, uint64_t badge_id, name ram_payer);
+
+    void create_revoke_badge_code_for_admin(name community_account, uint64_t badge_id, name ram_payer);
+
     bool verify_approver(name community_account, name voter, uint64_t code_id, bool is_ammnend_code);
 
     bool verify_voter(name community_account, name voter, uint64_t code_id, bool is_amend_code);
@@ -281,6 +308,8 @@ private:
 
     void verify_right_holder_input(name community_account, RightHolder rightHolder);
 
+    RightHolder admin_right_holder();
+    
     static inline uint128_t build_reference_id(uint64_t reference_id, uint64_t type) {
         return static_cast<uint128_t>(type)  | static_cast<uint128_t>(reference_id) << 64;
     }
@@ -345,6 +374,20 @@ private:
         indexed_by< "by.code.name"_n, const_mem_fun<v1_code, uint64_t, &v1_code::by_code_name>>,
         indexed_by< "by.refer.id"_n, const_mem_fun<v1_code, uint128_t, &v1_code::by_reference_id>>
         > v1_code_table;
+
+    // table codes with type sole decision with scope is community_creator
+    TABLE v1_code_verify
+    {
+        uint64_t code_id;
+        bool verify_com_account = true;
+        bool verify_code_id = true;
+
+        uint64_t primary_key() const { return code_id; }
+
+        EOSLIB_SERIALIZE( v1_code_verify, (code_id)(verify_com_account)(verify_code_id));
+    };
+
+    typedef eosio::multi_index<"v1.codevrf"_n, v1_code_verify> v1_code_verify_table;
 
     // table code collective rule with scope is community_creator
     TABLE v1_collective_decision
@@ -533,7 +576,7 @@ private:
 		}
 	};
 
-	typedef eosio::multi_index<"v1.cert"_n, v1_cert,
+	typedef eosio::multi_index<"v1.certs"_n, v1_cert,
 							   eosio::indexed_by<"badgeid"_n, eosio::const_mem_fun<v1_cert, uint64_t, &v1_cert::by_badge_id>>,
 							   eosio::indexed_by<"owner"_n, eosio::const_mem_fun<v1_cert, uint64_t, &v1_cert::by_owner>>> v1_cert_table;
 
@@ -556,6 +599,10 @@ public:
             ((v1.position)(v1_position)(v1_position_table))
             ((v1.codeexec)(v1_sole_decision)(v1_code_sole_decision_table))
             ((v1.amenexec)(v1_sole_decision)(v1_amend_sole_decision_table))
+            ((v1.filling)(v1_election_rule)(v1_election_table))
+            ((v1.pproposal)(v1_pos_proposal)(v1_posproposal_table))
+            ((v1.cproposal)(v1_code_proposal)(v1_code_proposals_table))
+            ((v1.candidate)(v1_pos_candidate)(v1_poscandidate_table))
     )
 #endif
 };

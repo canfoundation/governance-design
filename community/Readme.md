@@ -2,7 +2,7 @@
 Governance Design
 ----------
 
-Version 3.0.1
+Version 3.1.0
 
 code hash b1b99cb027707a00a8e4457483dfb56fca9dc71c4730ad70d00636407a5e5703
 
